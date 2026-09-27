@@ -1,0 +1,60 @@
+# Continuous delivery on Cloud Build: build, push, migrate, roll out.
+#   gcloud builds submit --config cloudbuild.yaml \
+#     --substitutions=_API_URL=https://pressroom-api-xxxx.a.run.app
+# Infrastructure (services, database, topics) is created by deploy/terraform.
+
+substitutions:
+  _REGION: us-central1
+  _REPO: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/pressroom
+  _API_URL: ""
+  _TAG: ${SHORT_SHA}
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  dynamicSubstitutions: true
+
+steps:
+  - id: build-api
+    name: gcr.io/cloud-builders/docker
+    args: [build, --target, api, -t, "${_REPO}/api:${_TAG}", .]
+    waitFor: ["-"]
+  - id: build-worker
+    name: gcr.io/cloud-builders/docker
+    args: [build, --target, worker, -t, "${_REPO}/worker:${_TAG}", .]
+    waitFor: ["-"]
+  - id: build-ctl
+    name: gcr.io/cloud-builders/docker
+    args: [build, --target, ctl, -t, "${_REPO}/ctl:${_TAG}", .]
+    waitFor: ["-"]
+  - id: build-web
+    name: gcr.io/cloud-builders/docker
+    args: [build, --build-arg, "VITE_GRAPHQL_URL=${_API_URL}/graphql", -t, "${_REPO}/web:${_TAG}", web]
+    waitFor: ["-"]
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - for i in api worker ctl web; do docker push "${_REPO}/$$i:${_TAG}" || exit 1; done
+
+  # Schema first: new code must run against the new schema, and migrations
+  # are written to stay compatible with the version still serving traffic.
+  - id: migrate
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud run jobs update pressroom-migrate --region "${_REGION}" --image "${_REPO}/ctl:${_TAG}" &&
+        gcloud run jobs execute pressroom-migrate --region "${_REGION}" --wait
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        for s in api worker web; do
+          gcloud run services update "pressroom-$$s" --region "${_REGION}" --image "${_REPO}/$$s:${_TAG}" || exit 1
+        done
