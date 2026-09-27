@@ -1,0 +1,27 @@
+# Go
+/bin/
+*.test
+*.out
+coverage.*
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+*.tfvars
+!example.tfvars
+
+# Terraform
+deploy/terraform/.terraform/
+deploy/terraform/.terraform.lock.hcl
+deploy/terraform/*.tfstate*
+
+# Web
+web/node_modules/
+web/dist/
+web/coverage/
+
+# Editors
+.idea/
+.vscode/
+.DS_Store
