@@ -25,25 +25,40 @@ func (m Micros) String() string {
 	return fmt.Sprintf("%s%d.%06d", sign, v/1e6, v%1e6)
 }
 
-// Usage counts the tokens a model consumed.
+// Usage counts the tokens a model consumed. CachedInputTokens are input
+// tokens served from the provider's prompt cache, billed at a discount.
 type Usage struct {
-	InputTokens  int
-	OutputTokens int
+	InputTokens       int
+	CachedInputTokens int
+	OutputTokens      int
 }
 
 // Add returns the sum of two usages.
 func (u Usage) Add(o Usage) Usage {
-	return Usage{InputTokens: u.InputTokens + o.InputTokens, OutputTokens: u.OutputTokens + o.OutputTokens}
+	return Usage{
+		InputTokens:       u.InputTokens + o.InputTokens,
+		CachedInputTokens: u.CachedInputTokens + o.CachedInputTokens,
+		OutputTokens:      u.OutputTokens + o.OutputTokens,
+	}
 }
 
 // Price is a model's list price per million tokens.
 type Price struct {
 	InputPerMTok  float64
 	OutputPerMTok float64
+	// CachedInputPerMTok defaults to a tenth of the input price when zero,
+	// which matches the common prompt-cache discount.
+	CachedInputPerMTok float64
 }
 
 // Cost prices a usage.
 func (p Price) Cost(u Usage) Micros {
-	usd := float64(u.InputTokens)/1e6*p.InputPerMTok + float64(u.OutputTokens)/1e6*p.OutputPerMTok
+	cached := p.CachedInputPerMTok
+	if cached == 0 {
+		cached = p.InputPerMTok / 10
+	}
+	usd := float64(u.InputTokens)/1e6*p.InputPerMTok +
+		float64(u.CachedInputTokens)/1e6*cached +
+		float64(u.OutputTokens)/1e6*p.OutputPerMTok
 	return MicrosFromUSD(usd)
 }
