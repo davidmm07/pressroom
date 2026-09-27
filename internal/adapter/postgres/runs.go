@@ -197,15 +197,16 @@ func (r *RunRepo) Create(ctx context.Context, run *domain.Run) error {
 		if err != nil {
 			return err
 		}
+		verdict, reviewer, note, reviewedAt := reviewColumns(run)
 		_, err = r.db.q(ctx).Exec(ctx, `INSERT INTO runs (
 			id, agent_id, model_provider, model_name, experiment_id, variant, trigger, input, idempotency_key,
 			status, transcript, pending, output, failure_reason, turns, input_tokens, cached_input_tokens, output_tokens,
-			cost_micros, version, created_at, started_at, finished_at)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
+			cost_micros, review_verdict, reviewer, review_note, reviewed_at, version, created_at, started_at, finished_at)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)`,
 			run.ID, run.AgentID, run.Model.Provider, run.Model.Name, nullID(run.ExperimentID), run.Variant, run.Trigger,
 			run.Input, nullableIdempotencyKey(run.IdempotencyKey), run.Status, transcript, pending, run.Output,
 			run.FailureReason, run.Turns, run.Usage.InputTokens, run.Usage.CachedInputTokens, run.Usage.OutputTokens,
-			int64(run.Cost), run.Version, run.CreatedAt, run.StartedAt, run.FinishedAt)
+			int64(run.Cost), verdict, reviewer, note, reviewedAt, run.Version, run.CreatedAt, run.StartedAt, run.FinishedAt)
 		if err != nil {
 			return mapErr(err)
 		}
@@ -224,12 +225,7 @@ func (r *RunRepo) Save(ctx context.Context, run *domain.Run) error {
 	if err != nil {
 		return err
 	}
-	var verdict, reviewer, note *string
-	var reviewedAt *time.Time
-	if run.Review != nil {
-		v := string(run.Review.Verdict)
-		verdict, reviewer, note, reviewedAt = &v, &run.Review.Reviewer, &run.Review.Note, &run.Review.At
-	}
+	verdict, reviewer, note, reviewedAt := reviewColumns(run)
 	err = r.db.WithinTx(ctx, func(ctx context.Context) error {
 		tag, err := r.db.q(ctx).Exec(ctx, `UPDATE runs SET
 			status=$3, transcript=$4, pending=$5, output=$6, failure_reason=$7, turns=$8,
@@ -253,6 +249,14 @@ func (r *RunRepo) Save(ctx context.Context, run *domain.Run) error {
 	}
 	run.Version++
 	return nil
+}
+
+func reviewColumns(run *domain.Run) (verdict, reviewer, note *string, at *time.Time) {
+	if run.Review == nil {
+		return nil, nil, nil, nil
+	}
+	v := string(run.Review.Verdict)
+	return &v, &run.Review.Reviewer, &run.Review.Note, &run.Review.At
 }
 
 // insertSteps appends the audit trail. Steps are immutable, so existing
