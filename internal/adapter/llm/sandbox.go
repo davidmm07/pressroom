@@ -28,7 +28,7 @@ var _ port.LanguageModel = Sandbox{}
 // Complete plans the next step.
 func (Sandbox) Complete(_ context.Context, req port.CompletionRequest) (*port.Completion, error) {
 	facts := map[string]any{}
-	called := map[string]bool{}
+	skip := map[string]bool{} // tools already called or reported as not needed
 	var log []string
 
 	for i, m := range req.Messages {
@@ -36,14 +36,18 @@ func (Sandbox) Complete(_ context.Context, req port.CompletionRequest) (*port.Co
 			mergeObject(facts, extractJSON(m.Text))
 		}
 		for _, c := range m.ToolCalls {
-			called[c.Name] = true
+			skip[c.Name] = true
 		}
 		for _, r := range m.ToolResults {
 			if r.IsError {
 				log = append(log, fmt.Sprintf("%s failed (%s)", r.Name, firstLine(r.Content)))
 				continue
 			}
-			mergeObject(facts, extractJSON(r.Content))
+			out := extractJSON(r.Content)
+			for _, name := range toStrings(out["notNeeded"]) {
+				skip[name] = true
+			}
+			mergeObject(facts, out)
 			log = append(log, r.Name+" succeeded")
 		}
 	}
@@ -58,7 +62,7 @@ func (Sandbox) Complete(_ context.Context, req port.CompletionRequest) (*port.Co
 	usage := domain.Usage{InputTokens: 400 + promptChars/4, OutputTokens: 60}
 
 	for _, tool := range req.Tools {
-		if called[tool.Name] {
+		if skip[tool.Name] {
 			continue
 		}
 		args, ok := fillArguments(tool.InputSchema, facts)
@@ -100,7 +104,7 @@ func fillArguments(schema map[string]any, facts map[string]any) (map[string]any,
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		if v, ok := facts[name]; ok {
+		if v, ok := lookupFact(facts, name); ok {
 			args[name] = v
 			continue
 		}
@@ -116,7 +120,30 @@ func fillArguments(schema map[string]any, facts map[string]any) (map[string]any,
 	return args, true
 }
 
-var proseFields = map[string]bool{"body": true, "message": true, "note": true, "summary": true, "reason": true, "text": true}
+// lookupFact matches a parameter to a fact by exact name, then by suffix,
+// so a tool asking for "factor" finds a previous tool's "upscaleFactor".
+func lookupFact(facts map[string]any, name string) (any, bool) {
+	if v, ok := facts[name]; ok {
+		return v, true
+	}
+	if len(name) < 5 { // "id" or "to" would match far too much
+		return nil, false
+	}
+	suffix := strings.ToLower(name)
+	keys := make([]string, 0, len(facts))
+	for k := range facts {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if strings.HasSuffix(strings.ToLower(k), suffix) {
+			return facts[k], true
+		}
+	}
+	return nil, false
+}
+
+var proseFields = map[string]bool{"body": true, "message": true, "note": true, "summary": true, "reason": true, "text": true, "subject": true}
 
 func compose(field string, facts map[string]any) string {
 	var parts []string
