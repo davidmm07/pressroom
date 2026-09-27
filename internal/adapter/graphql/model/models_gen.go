@@ -85,6 +85,8 @@ type EvaluateCrewPayload struct {
 
 type Evaluation struct {
 	ID           string      `json:"id"`
+	AgentID      string      `json:"agentId"`
+	Agent        *Agent      `json:"agent"`
 	Decision     Decision    `json:"decision"`
 	Reason       string      `json:"reason"`
 	StatusBefore AgentStatus `json:"statusBefore"`

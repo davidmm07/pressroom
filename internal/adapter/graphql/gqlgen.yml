@@ -52,3 +52,6 @@ models:
   Opportunity:
     fields:
       agent: { resolver: true }
+  Evaluation:
+    fields:
+      agent: { resolver: true }

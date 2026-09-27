@@ -43,7 +43,7 @@ func run() error {
 	defer a.Close()
 
 	resolver := &graphql.Resolver{
-		Agents: a.Agents, Runs: a.Runs, Evaluation: a.Evaluation, Experiments: a.Experiments,
+		Agents: a.Agents, Runs: a.Runs, Evaluator: a.Evaluation, Experiments: a.Experiments,
 		Opportunities: a.Opportunities, Tools: a.Tools, Models: a.Catalog,
 	}
 	gql := graphql.NewHandler(resolver, graphql.ServerConfig{

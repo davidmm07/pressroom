@@ -13,7 +13,7 @@ import (
 type Resolver struct {
 	Agents        *app.AgentService
 	Runs          *app.RunService
-	Evaluation    *app.EvaluationService
+	Evaluator     *app.EvaluationService
 	Experiments   *app.ExperimentService
 	Opportunities *app.OpportunityService
 	Tools         port.ToolRegistry

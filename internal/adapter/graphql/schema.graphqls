@@ -352,6 +352,8 @@ type Experiment {
 
 type Evaluation {
   id: ID!
+  agentId: ID!
+  agent: Agent!
   decision: Decision!
   reason: String!
   statusBefore: AgentStatus!

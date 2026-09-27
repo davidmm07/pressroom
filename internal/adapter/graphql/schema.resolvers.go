@@ -42,7 +42,7 @@ func (r *agentResolver) ActiveExperiment(ctx context.Context, obj *model.Agent) 
 
 // Evaluations is the resolver for the evaluations field.
 func (r *agentResolver) Evaluations(ctx context.Context, obj *model.Agent, last *int) ([]*model.Evaluation, error) {
-	evals, err := r.Evaluation.History(ctx, domain.ID(obj.ID), deref(last, 5))
+	evals, err := r.Evaluator.History(ctx, domain.ID(obj.ID), deref(last, 5))
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +51,15 @@ func (r *agentResolver) Evaluations(ctx context.Context, obj *model.Agent, last 
 		out[i] = toEvaluation(e)
 	}
 	return out, nil
+}
+
+// Agent is the resolver for the agent field.
+func (r *evaluationResolver) Agent(ctx context.Context, obj *model.Evaluation) (*model.Agent, error) {
+	a, err := r.loadersFrom(ctx).agent.Load(ctx, domain.ID(obj.AgentID))
+	if err != nil {
+		return nil, err
+	}
+	return r.toAgent(a), nil
 }
 
 // Agent is the resolver for the agent field.
@@ -234,7 +243,7 @@ func (r *mutationResolver) ConcludeExperiment(ctx context.Context, id string, fo
 
 // EvaluateCrew is the resolver for the evaluateCrew field.
 func (r *mutationResolver) EvaluateCrew(ctx context.Context) (*model.EvaluateCrewPayload, error) {
-	evals, err := r.Evaluation.EvaluateCrew(ctx)
+	evals, err := r.Evaluator.EvaluateCrew(ctx)
 	if err != nil {
 		errs, err := userErrors(err, "", nil)
 		return &model.EvaluateCrewPayload{Evaluations: []*model.Evaluation{}, UserErrors: errs}, err
@@ -313,11 +322,11 @@ func (r *queryResolver) Crew(ctx context.Context) (*model.CrewSummary, error) {
 		}
 	}
 	if len(agents) > 0 {
-		month, err := r.Evaluation.Scorecards(ctx, agents, 30)
+		month, err := r.Evaluator.Scorecards(ctx, agents, 30)
 		if err != nil {
 			return nil, err
 		}
-		week, err := r.Evaluation.Scorecards(ctx, agents, 7)
+		week, err := r.Evaluator.Scorecards(ctx, agents, 7)
 		if err != nil {
 			return nil, err
 		}
@@ -497,6 +506,9 @@ func (r *runResolver) Steps(ctx context.Context, obj *model.Run) ([]*model.RunSt
 // Agent returns generated.AgentResolver implementation.
 func (r *Resolver) Agent() generated.AgentResolver { return &agentResolver{r} }
 
+// Evaluation returns generated.EvaluationResolver implementation.
+func (r *Resolver) Evaluation() generated.EvaluationResolver { return &evaluationResolver{r} }
+
 // Experiment returns generated.ExperimentResolver implementation.
 func (r *Resolver) Experiment() generated.ExperimentResolver { return &experimentResolver{r} }
 
@@ -512,9 +524,12 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 // Run returns generated.RunResolver implementation.
 func (r *Resolver) Run() generated.RunResolver { return &runResolver{r} }
 
-type agentResolver struct{ *Resolver }
-type experimentResolver struct{ *Resolver }
-type mutationResolver struct{ *Resolver }
-type opportunityResolver struct{ *Resolver }
-type queryResolver struct{ *Resolver }
-type runResolver struct{ *Resolver }
+type (
+	agentResolver       struct{ *Resolver }
+	evaluationResolver  struct{ *Resolver }
+	experimentResolver  struct{ *Resolver }
+	mutationResolver    struct{ *Resolver }
+	opportunityResolver struct{ *Resolver }
+	queryResolver       struct{ *Resolver }
+	runResolver         struct{ *Resolver }
+)

@@ -66,7 +66,7 @@ func newStack(t *testing.T) *stack {
 	r := &graphql.Resolver{
 		Agents:        app.NewAgentService(store.Agents, registry, bus, clock{}),
 		Runs:          app.NewRunService(store.Agents, store.Runs, store.Experiments, store.Queue, store, bus, clock{}),
-		Evaluation:    app.NewEvaluationService(store.Agents, store.Runs, store.Evaluations, store, bus, clock{}, app.EvaluationConfig{Window: 720 * time.Hour, HourlyRate: hourly, Policy: domain.DefaultRetirementPolicy()}),
+		Evaluator:     app.NewEvaluationService(store.Agents, store.Runs, store.Evaluations, store, bus, clock{}, app.EvaluationConfig{Window: 720 * time.Hour, HourlyRate: hourly, Policy: domain.DefaultRetirementPolicy()}),
 		Experiments:   app.NewExperimentService(store.Agents, store.Runs, store.Experiments, store, bus, clock{}, hourly, domain.DefaultComparisonPolicy()),
 		Opportunities: app.NewOpportunityService(store.Opportunities, store.Agents, clock{}),
 		Tools:         registry, Models: catalog,

@@ -32,6 +32,7 @@ type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 type ResolverRoot interface {
 	Agent() AgentResolver
+	Evaluation() EvaluationResolver
 	Experiment() ExperimentResolver
 	Mutation() MutationResolver
 	Opportunity() OpportunityResolver
@@ -93,6 +94,8 @@ type ComplexityRoot struct {
 	}
 
 	Evaluation struct {
+		Agent        func(childComplexity int) int
+		AgentID      func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		Decision     func(childComplexity int) int
 		ID           func(childComplexity int) int
@@ -308,6 +311,9 @@ type AgentResolver interface {
 	Runs(ctx context.Context, obj *model.Agent, status []model.RunStatus, first *int, after *string) (*model.RunConnection, error)
 	ActiveExperiment(ctx context.Context, obj *model.Agent) (*model.Experiment, error)
 	Evaluations(ctx context.Context, obj *model.Agent, last *int) ([]*model.Evaluation, error)
+}
+type EvaluationResolver interface {
+	Agent(ctx context.Context, obj *model.Evaluation) (*model.Agent, error)
 }
 type ExperimentResolver interface {
 	Agent(ctx context.Context, obj *model.Experiment) (*model.Agent, error)
@@ -594,6 +600,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.EvaluateCrewPayload.UserErrors(childComplexity), true
 
+	case "Evaluation.agent":
+		if e.ComplexityRoot.Evaluation.Agent == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Evaluation.Agent(childComplexity), true
+	case "Evaluation.agentId":
+		if e.ComplexityRoot.Evaluation.AgentID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Evaluation.AgentID(childComplexity), true
 	case "Evaluation.createdAt":
 		if e.ComplexityRoot.Evaluation.CreatedAt == nil {
 			break
@@ -1995,6 +2013,8 @@ type Experiment {
 
 type Evaluation {
   id: ID!
+  agentId: ID!
+  agent: Agent!
   decision: Decision!
   reason: String!
   statusBefore: AgentStatus!
@@ -2238,6 +2258,10 @@ func (ec *executionContext) childFields_Evaluation(ctx context.Context, field gr
 	switch field.Name {
 	case "id":
 		return ec.fieldContext_Evaluation_id(ctx, field)
+	case "agentId":
+		return ec.fieldContext_Evaluation_agentId(ctx, field)
+	case "agent":
+		return ec.fieldContext_Evaluation_agent(ctx, field)
 	case "decision":
 		return ec.fieldContext_Evaluation_decision(ctx, field)
 	case "reason":
@@ -4134,6 +4158,61 @@ func (ec *executionContext) _Evaluation_id(ctx context.Context, field graphql.Co
 }
 func (ec *executionContext) fieldContext_Evaluation_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Evaluation", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _Evaluation_agentId(ctx context.Context, field graphql.CollectedField, obj *model.Evaluation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Evaluation_agentId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AgentID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNID2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Evaluation_agentId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Evaluation", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _Evaluation_agent(ctx context.Context, field graphql.CollectedField, obj *model.Evaluation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Evaluation_agent(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Evaluation().Agent(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Agent) graphql.Marshaler {
+			return ec.marshalNAgent2ᚖgithubᚗcomᚋdavidmm07ᚋpressroomᚋinternalᚋadapterᚋgraphqlᚋmodelᚐAgent(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Evaluation_agent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Evaluation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Agent(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Evaluation_decision(ctx context.Context, field graphql.CollectedField, obj *model.Evaluation) (ret graphql.Marshaler) {
@@ -10068,37 +10147,80 @@ func (ec *executionContext) _Evaluation(ctx context.Context, sel ast.SelectionSe
 		case "id":
 			out.Values[i] = ec._Evaluation_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "agentId":
+			out.Values[i] = ec._Evaluation_agentId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "agent":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Evaluation_agent(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "decision":
 			out.Values[i] = ec._Evaluation_decision(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "reason":
 			out.Values[i] = ec._Evaluation_reason(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "statusBefore":
 			out.Values[i] = ec._Evaluation_statusBefore(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "statusAfter":
 			out.Values[i] = ec._Evaluation_statusAfter(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "scorecard":
 			out.Values[i] = ec._Evaluation_scorecard(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "createdAt":
 			out.Values[i] = ec._Evaluation_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))

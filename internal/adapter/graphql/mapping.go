@@ -100,7 +100,7 @@ func toExperiment(e *domain.Experiment) *model.Experiment {
 
 func toEvaluation(e *domain.Evaluation) *model.Evaluation {
 	return &model.Evaluation{
-		ID: string(e.ID), Decision: model.Decision(e.Decision), Reason: e.Reason,
+		ID: string(e.ID), AgentID: string(e.AgentID), Decision: model.Decision(e.Decision), Reason: e.Reason,
 		StatusBefore: model.AgentStatus(e.StatusBefore), StatusAfter: model.AgentStatus(e.StatusAfter),
 		Scorecard: toScorecard(e.Scorecard), CreatedAt: e.CreatedAt,
 	}

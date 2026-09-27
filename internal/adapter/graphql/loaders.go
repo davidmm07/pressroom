@@ -77,7 +77,7 @@ func (r *Resolver) newLoaders() *loaders {
 				}
 				agents = append(agents, a)
 			}
-			cards, err := r.Evaluation.Scorecards(ctx, agents, window)
+			cards, err := r.Evaluator.Scorecards(ctx, agents, window)
 			for _, i := range positions {
 				if errs[i] == nil {
 					out[i], errs[i] = cards[keys[i].AgentID], err
