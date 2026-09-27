@@ -302,7 +302,9 @@ func truncate(s string, max int) string {
 	if max <= 0 || len(s) <= max {
 		return s
 	}
-	return s[:max] + fmt.Sprintf("\n[truncated %d bytes]", len(s)-max)
+	// Cutting at a byte offset can split a multi-byte character; drop the
+	// fragment so providers never receive invalid UTF-8.
+	return strings.ToValidUTF8(s[:max], "") + fmt.Sprintf("\n[truncated %d bytes]", len(s)-max)
 }
 
 func orUnknown(s string) string {

@@ -188,7 +188,11 @@ func (s *RunService) Cancel(ctx context.Context, runID domain.ID) (*domain.Run, 
 	if err != nil {
 		return nil, err
 	}
-	s.events.Publish(ctx, domain.RunFinished{RunID: run.ID, Status: run.Status, Cost: run.Cost, Reason: "cancelled"})
+	event := domain.RunFinished{RunID: run.ID, Status: run.Status, Cost: run.Cost, Reason: "cancelled"}
+	if agent, err := s.agents.Get(ctx, run.AgentID); err == nil {
+		event.AgentSlug = agent.Slug
+	}
+	s.events.Publish(ctx, event)
 	return run, nil
 }
 
