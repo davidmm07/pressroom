@@ -1,0 +1,77 @@
+# Local stack: `docker compose up --build`, then open http://localhost:3000
+# (set WEB_PORT to use another port).
+# Without API keys every agent runs on the offline sandbox model.
+name: pressroom
+
+x-app-env: &app-env
+  DATABASE_URL: postgres://pressroom:pressroom@postgres:5432/pressroom?sslmode=disable
+  LOG_FORMAT: text
+  PRESSROOM_MODEL_MODE: ${PRESSROOM_MODEL_MODE:-auto}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  XAI_API_KEY: ${XAI_API_KEY:-}
+  OPEN_SOURCE_BASE_URL: ${OPEN_SOURCE_BASE_URL:-}
+  SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: pressroom
+      POSTGRES_PASSWORD: pressroom
+      POSTGRES_DB: pressroom
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pressroom"]
+      interval: 2s
+      retries: 30
+
+  # One-shot jobs: apply migrations, then load the demo crew (idempotent).
+  migrations:
+    image: pressroom-ctl:local
+    build: { context: ., target: ctl }
+    environment: *app-env
+    command: ["migrate"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  seed:
+    image: pressroom-ctl:local
+    build: { context: ., target: ctl }
+    environment: *app-env
+    command: ["seed"]
+    depends_on:
+      migrations: { condition: service_completed_successfully }
+
+  api:
+    image: pressroom-api:local
+    build: { context: ., target: api }
+    environment:
+      <<: *app-env
+      PRESSROOM_CORS_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:5173
+    ports: ["8080:8080"]
+    depends_on:
+      seed: { condition: service_completed_successfully }
+
+  worker:
+    image: pressroom-worker:local
+    build: { context: ., target: worker }
+    environment:
+      <<: *app-env
+      PORT: "8081"
+    ports: ["8081:8081"]
+    depends_on:
+      seed: { condition: service_completed_successfully }
+
+  web:
+    image: pressroom-web:local
+    build:
+      context: web
+      args:
+        VITE_GRAPHQL_URL: http://localhost:8080/graphql
+    ports: ["${WEB_PORT:-3000}:8080"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
