@@ -1,0 +1,487 @@
+"""
+Pressroom API: hire, run, measure and retire the AI agents of a custom print shop.
+
+Conventions (docs/api.md has the details):
+- Mutations return a payload with the changed object and `userErrors`. Expected
+  problems (invalid input, a stale version, a forbidden state change) are
+  reported there, with a field path and a stable code. Top-level `errors` are
+  kept for failures the client cannot fix, and never leak internals.
+- Lists that grow without bound use Relay-style cursor connections.
+- Money is the `USD` scalar: a decimal string, never a float.
+"""
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+scalar Time
+
+"Arbitrary JSON: run inputs, tool arguments, step details."
+scalar JSON
+
+"An amount of US dollars as a decimal string with up to six places, e.g. \"0.012500\"."
+scalar USD
+
+type Query {
+  "The operator making the request."
+  viewer: Viewer!
+  "Headline numbers for the whole crew."
+  crew: CrewSummary!
+  agents(status: [AgentStatus!], department: Department): [Agent!]!
+  "Look an agent up by id or by slug."
+  agent(id: ID, slug: String): Agent
+  run(id: ID!): Run
+  runs(agentId: ID, status: [RunStatus!], first: Int = 20, after: String): RunConnection!
+  "Every tool an agent can be given."
+  tools: [Tool!]!
+  "Models that can power an agent, with list prices."
+  models: [ModelOption!]!
+  experiments(agentId: ID, status: ExperimentStatus): [Experiment!]!
+  "Intake requests from department leads, highest score first."
+  opportunities(status: OpportunityStatus, department: Department): [Opportunity!]!
+}
+
+type Mutation {
+  "Create an agent as a DRAFT. Activate it to put it to work."
+  createAgent(input: CreateAgentInput!): AgentPayload!
+  "Change an agent. Fails with CONFLICT if `expectedVersion` is stale."
+  updateAgent(input: UpdateAgentInput!): AgentPayload!
+  activateAgent(id: ID!): AgentPayload!
+  retireAgent(id: ID!, reason: String!): AgentPayload!
+
+  "Queue a run. Repeating a call with the same `idempotencyKey` returns the original run."
+  startRun(input: StartRunInput!): RunPayload!
+  "Let a paused run perform its sensitive tool call."
+  approveToolCall(runId: ID!): RunPayload!
+  "Refuse the paused tool call. The agent is told why and carries on."
+  denyToolCall(runId: ID!, reason: String!): RunPayload!
+  reviewRun(input: ReviewRunInput!): RunPayload!
+  cancelRun(runId: ID!): RunPayload!
+
+  "Send a share of an agent's runs to a challenger model."
+  startExperiment(input: StartExperimentInput!): ExperimentPayload!
+  "Compare the arms and promote the challenger if it won. `force` closes an inconclusive trial."
+  concludeExperiment(id: ID!, force: Boolean = false): ExperimentPayload!
+
+  "Apply the retirement policy to every agent on duty."
+  evaluateCrew: EvaluateCrewPayload!
+
+  submitOpportunity(input: SubmitOpportunityInput!): OpportunityPayload!
+  moveOpportunity(id: ID!, status: OpportunityStatus!, agentId: ID): OpportunityPayload!
+}
+
+# ---------------------------------------------------------------- enums
+
+enum Department {
+  PREPRESS
+  CUSTOMER_EXPERIENCE
+  OPERATIONS
+  MARKETING
+  FINANCE
+}
+
+enum AgentStatus {
+  DRAFT
+  ACTIVE
+  PROBATION
+  RETIRED
+}
+
+enum ModelProvider {
+  ANTHROPIC
+  OPENAI
+  XAI
+  OPEN_SOURCE
+  SANDBOX
+}
+
+enum RunStatus {
+  QUEUED
+  RUNNING
+  AWAITING_APPROVAL
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum RunTrigger {
+  MANUAL
+  EVENT
+  SCHEDULE
+}
+
+enum Variant {
+  CHAMPION
+  CHALLENGER
+}
+
+enum StepKind {
+  MODEL_TURN
+  TOOL_CALL
+  APPROVAL_REQUESTED
+  APPROVAL_GRANTED
+  APPROVAL_DENIED
+  COMPLETED
+  FAILED
+}
+
+enum Verdict {
+  ACCEPTED
+  EDITED
+  REJECTED
+}
+
+enum Decision {
+  KEEP
+  PROBATION
+  RETIRE
+  REINSTATE
+  INSUFFICIENT_DATA
+}
+
+enum ExperimentStatus {
+  RUNNING
+  PROMOTED
+  REJECTED
+}
+
+enum OpportunityStatus {
+  SUBMITTED
+  APPROVED
+  SHIPPED
+  DECLINED
+}
+
+enum Level {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum UserErrorCode {
+  REQUIRED
+  TOO_LONG
+  OUT_OF_RANGE
+  INVALID_FORMAT
+  INVALID_VALUE
+  NOT_FOUND
+  CONFLICT
+  INVALID_TRANSITION
+}
+
+# ---------------------------------------------------------------- types
+
+type Viewer {
+  email: String!
+}
+
+type CrewSummary {
+  activeAgents: Int!
+  onProbation: Int!
+  retired: Int!
+  runsLast7Days: Int!
+  awaitingApproval: Int!
+  hoursSavedLast30Days: Float!
+  spendLast30Days: USD!
+  netValueLast30Days: USD!
+}
+
+type Agent {
+  id: ID!
+  slug: String!
+  name: String!
+  description: String!
+  department: Department!
+  "Department lead accountable for this agent's results."
+  owner: String!
+  "The system prompt: the agent's job description."
+  instructions: String!
+  model: Model!
+  tools: [Tool!]!
+  "Event types that start a run automatically, e.g. ticket.created."
+  triggers: [String!]!
+  budget: Budget!
+  "Human minutes one accepted run replaces; turns runs into hours saved."
+  minutesSavedPerRun: Float!
+  status: AgentStatus!
+  "Pass back as `expectedVersion` when updating."
+  version: Int!
+  createdAt: Time!
+  updatedAt: Time!
+  scorecard(windowDays: Int = 30): Scorecard!
+  runs(status: [RunStatus!], first: Int = 10, after: String): RunConnection!
+  activeExperiment: Experiment
+  evaluations(last: Int = 5): [Evaluation!]!
+}
+
+type Model {
+  "provider/name, e.g. anthropic/claude-opus-5"
+  id: String!
+  provider: ModelProvider!
+  name: String!
+}
+
+type ModelOption {
+  model: Model!
+  label: String!
+  "List price in USD per million input tokens."
+  inputPerMTok: Float!
+  "List price in USD per million output tokens."
+  outputPerMTok: Float!
+  "Credentials are configured, or the sandbox will serve it."
+  available: Boolean!
+}
+
+type Budget {
+  maxSteps: Int!
+  maxCost: USD!
+}
+
+type Tool {
+  name: String!
+  description: String!
+  "Runs pause for a human before this tool executes."
+  requiresApproval: Boolean!
+  "JSON Schema the arguments must satisfy."
+  inputSchema: JSON!
+}
+
+type Scorecard {
+  windowDays: Int!
+  finishedRuns: Int!
+  succeeded: Int!
+  failed: Int!
+  successRate: Float!
+  reviewed: Int!
+  "Share of reviewed output that was kept (edited counts half). Null until something was reviewed."
+  acceptanceRate: Float
+  totalCost: USD!
+  costPerRun: USD!
+  hoursSaved: Float!
+  valueDelivered: USD!
+  "Value delivered minus model spend. Negative means the agent costs more than it saves."
+  netValue: USD!
+  avgDurationSeconds: Float!
+}
+
+type Run {
+  id: ID!
+  agentId: ID!
+  agent: Agent!
+  model: Model!
+  variant: Variant!
+  experimentId: ID
+  trigger: RunTrigger!
+  input: JSON!
+  status: RunStatus!
+  output: String!
+  failureReason: String!
+  turns: Int!
+  usage: Usage!
+  cost: USD!
+  "The tool call waiting for a human, when status is AWAITING_APPROVAL."
+  pendingToolCall: PendingToolCall
+  steps: [RunStep!]!
+  review: Review
+  createdAt: Time!
+  startedAt: Time
+  finishedAt: Time
+  durationSeconds: Float
+}
+
+type Usage {
+  inputTokens: Int!
+  cachedInputTokens: Int!
+  outputTokens: Int!
+}
+
+type PendingToolCall {
+  callId: String!
+  tool: Tool!
+  arguments: JSON!
+}
+
+type RunStep {
+  index: Int!
+  kind: StepKind!
+  toolName: String
+  summary: String!
+  detail: JSON!
+  latencyMs: Int!
+  cost: USD!
+  at: Time!
+}
+
+type Review {
+  verdict: Verdict!
+  reviewer: String!
+  note: String!
+  at: Time!
+}
+
+type RunConnection {
+  edges: [RunEdge!]!
+  pageInfo: PageInfo!
+}
+
+type RunEdge {
+  cursor: String!
+  node: Run!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+type Experiment {
+  id: ID!
+  agentId: ID!
+  agent: Agent!
+  champion: Model!
+  challenger: Model!
+  trafficPercent: Int!
+  hypothesis: String!
+  status: ExperimentStatus!
+  outcome: String!
+  createdAt: Time!
+  concludedAt: Time
+  championScorecard: Scorecard!
+  challengerScorecard: Scorecard!
+}
+
+type Evaluation {
+  id: ID!
+  decision: Decision!
+  reason: String!
+  statusBefore: AgentStatus!
+  statusAfter: AgentStatus!
+  scorecard: Scorecard!
+  createdAt: Time!
+}
+
+type Opportunity {
+  id: ID!
+  title: String!
+  problem: String!
+  department: Department!
+  submittedBy: String!
+  weeklyVolume: Int!
+  minutesPerTask: Float!
+  dataSensitivity: Level!
+  errorCost: Level!
+  status: OpportunityStatus!
+  "Human hours per week the task takes today."
+  hoursPerWeek: Float!
+  "0.3 to 1: discount for sensitive data and costly mistakes."
+  feasibility: Float!
+  "hoursPerWeek x feasibility. The backlog is sorted by it."
+  score: Float!
+  agentId: ID
+  agent: Agent
+  createdAt: Time!
+}
+
+# ---------------------------------------------------------------- inputs
+
+input CreateAgentInput {
+  slug: String!
+  name: String!
+  description: String = ""
+  department: Department!
+  owner: String!
+  instructions: String!
+  "provider/name, e.g. anthropic/claude-opus-5 or xai/grok-4"
+  model: String!
+  tools: [String!]!
+  triggers: [String!] = []
+  maxSteps: Int!
+  maxCost: USD!
+  minutesSavedPerRun: Float!
+}
+
+"Omitted fields keep their current value."
+input UpdateAgentInput {
+  id: ID!
+  expectedVersion: Int!
+  name: String
+  description: String
+  department: Department
+  owner: String
+  instructions: String
+  model: String
+  tools: [String!]
+  triggers: [String!]
+  maxSteps: Int
+  maxCost: USD
+  minutesSavedPerRun: Float
+}
+
+input StartRunInput {
+  "Give agentId or agentSlug."
+  agentId: ID
+  agentSlug: String
+  "The task, as a JSON object."
+  input: JSON!
+  "Retrying with the same key returns the first run instead of starting another."
+  idempotencyKey: String
+}
+
+input ReviewRunInput {
+  runId: ID!
+  verdict: Verdict!
+  note: String = ""
+}
+
+input StartExperimentInput {
+  agentId: ID!
+  "provider/name of the challenger model."
+  challenger: String!
+  "Share of runs sent to the challenger, 1 to 50."
+  trafficPercent: Int!
+  hypothesis: String!
+}
+
+input SubmitOpportunityInput {
+  title: String!
+  problem: String!
+  department: Department!
+  weeklyVolume: Int!
+  minutesPerTask: Float!
+  dataSensitivity: Level!
+  errorCost: Level!
+}
+
+# ---------------------------------------------------------------- payloads
+
+type UserError {
+  "Path to the offending input field, e.g. [\"input\", \"tools\", \"1\"]. Empty when not tied to a field."
+  field: [String!]!
+  code: UserErrorCode!
+  message: String!
+}
+
+type AgentPayload {
+  agent: Agent
+  userErrors: [UserError!]!
+}
+
+type RunPayload {
+  run: Run
+  userErrors: [UserError!]!
+}
+
+type ExperimentPayload {
+  experiment: Experiment
+  userErrors: [UserError!]!
+}
+
+type EvaluateCrewPayload {
+  evaluations: [Evaluation!]!
+  userErrors: [UserError!]!
+}
+
+type OpportunityPayload {
+  opportunity: Opportunity
+  userErrors: [UserError!]!
+}

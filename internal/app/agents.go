@@ -40,7 +40,8 @@ type AgentPatch struct {
 	Model              *domain.ModelRef
 	Tools              []string
 	Triggers           []string
-	Budget             *domain.Budget
+	MaxSteps           *int
+	MaxCost            *domain.Micros
 	MinutesSavedPerRun *float64
 }
 
@@ -51,7 +52,8 @@ func (p AgentPatch) applyTo(s *domain.AgentSpec) {
 	set(&s.Owner, p.Owner)
 	set(&s.Instructions, p.Instructions)
 	set(&s.Model, p.Model)
-	set(&s.Budget, p.Budget)
+	set(&s.Budget.MaxSteps, p.MaxSteps)
+	set(&s.Budget.MaxCost, p.MaxCost)
 	set(&s.MinutesSavedPerRun, p.MinutesSavedPerRun)
 	if p.Tools != nil {
 		s.Tools = p.Tools

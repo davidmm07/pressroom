@@ -1,0 +1,54 @@
+# gqlgen code generation. Run `make generate` after editing schema.graphqls.
+schema:
+  - schema.graphqls
+
+exec:
+  layout: single-file
+  filename: generated/generated.go
+  package: generated
+
+model:
+  filename: model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: .
+  package: graphql
+  filename_template: "{name}.resolvers.go"
+
+# Resolver methods return errors with context; keep argument pointers for
+# optional inputs so "not provided" and "null" stay distinguishable.
+omit_getters: true
+omit_complexity: false
+nullable_input_omittable: false
+
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.ID
+  Int:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int
+  JSON:
+    model: github.com/davidmm07/pressroom/internal/adapter/graphql/model.JSON
+  USD:
+    model: github.com/davidmm07/pressroom/internal/adapter/graphql/model.USD
+  Agent:
+    fields:
+      scorecard: { resolver: true }
+      runs: { resolver: true }
+      activeExperiment: { resolver: true }
+      evaluations: { resolver: true }
+  Run:
+    fields:
+      agent: { resolver: true }
+      steps: { resolver: true }
+  Experiment:
+    fields:
+      agent: { resolver: true }
+      championScorecard: { resolver: true }
+      challengerScorecard: { resolver: true }
+  Opportunity:
+    fields:
+      agent: { resolver: true }
