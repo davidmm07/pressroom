@@ -9,10 +9,14 @@ variable "region" {
   default     = "us-central1"
 }
 
-variable "image_tag" {
-  description = "Initial image tag. Cloud Build rolls out later tags; Terraform ignores image drift."
+variable "initial_image" {
+  description = <<-EOT
+    Image the services start with, before Cloud Build has pushed Pressroom's
+    own images. Cloud Build rolls out the real ones and Terraform ignores
+    image drift from then on.
+  EOT
   type        = string
-  default     = "latest"
+  default     = "us-docker.pkg.dev/cloudrun/container/hello"
 }
 
 variable "db_tier" {

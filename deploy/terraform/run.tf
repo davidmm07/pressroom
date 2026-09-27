@@ -1,7 +1,7 @@
 # ---- Cloud Run services ----
 #
-# Images are rolled out by Cloud Build (cloudbuild.yaml), so Terraform
-# ignores image changes after the first apply.
+# Services start on var.initial_image; Cloud Build (cloudbuild.yaml) rolls out
+# the real images and Terraform ignores image changes from then on.
 
 resource "google_cloud_run_v2_service" "web" {
   name                = "pressroom-web"
@@ -14,7 +14,7 @@ resource "google_cloud_run_v2_service" "web" {
       max_instance_count = 3
     }
     containers {
-      image = "${local.registry}/web:${var.image_tag}"
+      image = var.initial_image
       ports {
         container_port = 8080
       }
@@ -51,7 +51,7 @@ resource "google_cloud_run_v2_service" "api" {
     }
 
     containers {
-      image = "${local.registry}/api:${var.image_tag}"
+      image = var.initial_image
       ports {
         container_port = 8080
       }
@@ -154,7 +154,7 @@ resource "google_cloud_run_v2_service" "worker" {
     }
 
     containers {
-      image = "${local.registry}/worker:${var.image_tag}"
+      image = var.initial_image
       ports {
         container_port = 8080
       }
@@ -241,7 +241,7 @@ resource "google_cloud_run_v2_job" "migrate" {
       }
 
       containers {
-        image = "${local.registry}/ctl:${var.image_tag}"
+        image = var.initial_image
         args  = ["migrate"]
         volume_mounts {
           name       = "cloudsql"
