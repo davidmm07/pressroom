@@ -160,6 +160,9 @@ const MaxRunInputBytes = 64 << 10
 
 // NewRunParams groups what the caller decides when starting a run.
 type NewRunParams struct {
+	// ID may be chosen up front, e.g. to assign an experiment arm before the
+	// run exists. A fresh ID is generated when empty.
+	ID             ID
 	Input          json.RawMessage
 	Trigger        Trigger
 	IdempotencyKey string
@@ -187,8 +190,12 @@ func NewRun(agent *Agent, p NewRunParams, now time.Time) (*Run, error) {
 	if variant == "" {
 		variant = VariantChampion
 	}
+	id := p.ID
+	if id == "" {
+		id = NewID()
+	}
 	return &Run{
-		ID:             NewID(),
+		ID:             id,
 		AgentID:        agent.ID,
 		Model:          p.Model,
 		ExperimentID:   p.ExperimentID,
