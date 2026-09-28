@@ -137,7 +137,7 @@ export function IntakePage() {
                 <td>
                   <div className="strong">{o.title}</div>
                   <div className="muted small">
-                    {o.weeklyVolume}/week x {o.minutesPerTask} min · {o.submittedBy}
+                    {o.weeklyVolume}/week x {o.minutesPerTask} min, from {o.submittedBy}
                   </div>
                 </td>
                 <td>{humanize(o.department)}</td>

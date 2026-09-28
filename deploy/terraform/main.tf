@@ -1,9 +1,9 @@
 # Pressroom on Google Cloud:
 #
-#   dashboard (Cloud Run) ──► api (Cloud Run) ──► Cloud SQL for PostgreSQL
-#                                                   ▲
-#   storefront ──► Pub/Sub ──push (OIDC)──► worker (Cloud Run, private) ──► Claude / OpenAI / Grok
-#   Cloud Scheduler ──(OIDC)──────────────► worker /jobs/evaluate
+#   dashboard (Cloud Run) --> api (Cloud Run) --> Cloud SQL for PostgreSQL
+#                                                   ^
+#   storefront --> Pub/Sub --push (OIDC)--> worker (Cloud Run, private) --> Claude / OpenAI / Grok
+#   Cloud Scheduler --(OIDC)--------------> worker /jobs/evaluate
 #
 # Secrets live in Secret Manager and reach the containers as environment
 # variables. Model API keys are created outside Terraform so their values

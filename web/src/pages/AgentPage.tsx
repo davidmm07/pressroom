@@ -231,7 +231,7 @@ export function AgentPage() {
             {agent.name} <Badge value={agent.status} />
           </>
         }
-        subtitle={`${humanize(agent.department)} · owned by ${agent.owner} · ${agent.description}`}
+        subtitle={`${humanize(agent.department)}, owned by ${agent.owner}. ${agent.description}`}
         actions={
           <>
             {agent.status === 'DRAFT' && (
@@ -253,7 +253,7 @@ export function AgentPage() {
       <section className="tiles">
         <Tile label="Runs (30 days)" value={card.finishedRuns} hint={`avg ${formatDuration(card.avgDurationSeconds)}`} />
         <Tile label="Success" value={formatPercent(card.finishedRuns ? card.successRate : null)} hint="target 85%" />
-        <Tile label="Accepted" value={formatPercent(card.acceptanceRate)} hint={`${card.reviewed} reviewed · target 70%`} />
+        <Tile label="Accepted" value={formatPercent(card.acceptanceRate)} hint={`${card.reviewed} reviewed, target 70%`} />
         <Tile label="Hours saved" value={formatHours(card.hoursSaved)} hint={`${agent.minutesSavedPerRun} min per accepted run`} />
         <Tile label="Spend" value={formatUSD(card.totalCost)} hint={`${formatUSD(card.costPerRun)} per run`} />
         <Tile label="Net value" value={formatUSD(card.netValue)} tone={Number(card.netValue) >= 0 ? 'good' : 'bad'} />
@@ -263,13 +263,13 @@ export function AgentPage() {
         <section className="card">
           <h2>Model</h2>
           <p>
-            <code>{agent.model.id}</code> · budget {agent.budget.maxSteps} steps, {formatUSD(agent.budget.maxCost)} per run
+            <code>{agent.model.id}</code> with a budget of {agent.budget.maxSteps} steps and {formatUSD(agent.budget.maxCost)} per run
           </p>
           {exp ? (
             <>
               <h3>Experiment: {exp.challenger.id} on {exp.trafficPercent}% of runs</h3>
               <p className="muted">
-                {exp.hypothesis} · started {timeAgo(exp.createdAt)}
+                {exp.hypothesis} (started {timeAgo(exp.createdAt)})
               </p>
               <table className="table compact">
                 <thead>
@@ -284,8 +284,8 @@ export function AgentPage() {
                 </thead>
                 <tbody>
                   {[
-                    { arm: `Champion · ${exp.champion.id}`, c: exp.championScorecard },
-                    { arm: `Challenger · ${exp.challenger.id}`, c: exp.challengerScorecard },
+                    { arm: `Champion: ${exp.champion.id}`, c: exp.championScorecard },
+                    { arm: `Challenger: ${exp.challenger.id}`, c: exp.challengerScorecard },
                   ].map(({ arm, c }) => (
                     <tr key={arm}>
                       <td>{arm}</td>

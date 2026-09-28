@@ -160,7 +160,7 @@ export function RunPage() {
             Run by <Link to={`/agents/${run.agent.slug}`}>{run.agent.name}</Link> <Badge value={run.status} />
           </>
         }
-        subtitle={`${humanize(run.trigger)} · ${timeAgo(run.createdAt)} · ${run.model.id}${run.variant === 'CHALLENGER' ? ' (challenger)' : ''}`}
+        subtitle={`${humanize(run.trigger)} run, ${timeAgo(run.createdAt)}, on ${run.model.id}${run.variant === 'CHALLENGER' ? ' (challenger)' : ''}`}
         actions={
           (inFlight.has(run.status) || run.status === 'AWAITING_APPROVAL') && (
             <button className="button button-quiet" onClick={() => act(() => cancel({ runId: run.id }))}>
@@ -215,7 +215,7 @@ export function RunPage() {
           {run.review ? (
             <p>
               <Badge value={run.review.verdict} /> by {run.review.reviewer} {timeAgo(run.review.at)}
-              {run.review.note && <span className="muted"> · {run.review.note}</span>}
+              {run.review.note && <span className="muted">: {run.review.note}</span>}
             </p>
           ) : (
             run.status === 'SUCCEEDED' && <ReviewForm runId={run.id} />
@@ -231,7 +231,7 @@ export function RunPage() {
               <div className="step-head">
                 <Badge value={s.kind} /> <span>{s.summary}</span>
                 <span className="muted small">
-                  {s.latencyMs > 0 && `${s.latencyMs} ms`} {Number(s.cost) > 0 && `· ${formatUSD(s.cost)}`}
+                  {[s.latencyMs > 0 && `${s.latencyMs} ms`, Number(s.cost) > 0 && formatUSD(s.cost)].filter(Boolean).join(', ')}
                 </span>
               </div>
               <StepDetail detail={s.detail} />

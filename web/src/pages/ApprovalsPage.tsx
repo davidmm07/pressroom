@@ -88,7 +88,7 @@ export function ApprovalsPage() {
               {run.agent.name} wants to call <code>{run.pendingToolCall?.tool.name}</code>
             </h2>
             <span className="muted small">
-              {timeAgo(run.createdAt)} · owner {run.agent.owner} · <Link to={`/runs/${run.id}`}>open run</Link>
+              {timeAgo(run.createdAt)}, owner {run.agent.owner}, <Link to={`/runs/${run.id}`}>open run</Link>
             </span>
           </div>
           <p className="muted small">{run.pendingToolCall?.tool.description}</p>

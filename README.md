@@ -19,8 +19,8 @@ experiments on live traffic.
 flowchart LR
   SF[Storefront] -- artwork.uploaded / ticket.created --> PS[(Pub/Sub)]
   PS -- push, OIDC --> W[Worker]
-  W -- agent loop --> M{{Claude · GPT · Grok · open weights}}
-  W -- tool calls --> T[Order DB · Image studio · Carrier · Helpdesk · Payments · Slack]
+  W -- agent loop --> M{{Claude, GPT, Grok, open weights}}
+  W -- tool calls --> T[Order DB, image studio, carrier, helpdesk, payments, Slack]
   W <--> DB[(PostgreSQL)]
   UI[Dashboard<br/>React + TypeScript] -- GraphQL --> API[API]
   API <--> DB
@@ -90,7 +90,7 @@ cmd/                   api, worker, pressroomctl: thin mains
 internal/domain        entities, value objects, policies (stdlib only)
 internal/port          interfaces the use cases own
 internal/app           use cases: agents, runs, executor, worker, evaluation, experiments, intake
-internal/adapter/      llm · tools · postgres · graphql · httpserver · events
+internal/adapter/      llm, tools, postgres, graphql, httpserver, events
 internal/bootstrap     composition root: the only place that knows every concrete type
 internal/platform      config, structured logging, auth
 web/                   React + TypeScript dashboard

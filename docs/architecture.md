@@ -10,7 +10,7 @@ patterns to the code that applies them.
 ```mermaid
 flowchart TB
   subgraph Frameworks and drivers
-    CMD[cmd/api · cmd/worker · cmd/pressroomctl]
+    CMD[cmd/api, cmd/worker, cmd/pressroomctl]
     BOOT[internal/bootstrap]
   end
   subgraph Interface adapters

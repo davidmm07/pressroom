@@ -118,7 +118,7 @@ export function NewAgentPage() {
           <select value={form.model} onChange={set('model')}>
             {data?.models.map((m) => (
               <option key={m.model.id} value={m.model.id}>
-                {m.label} · ${m.inputPerMTok}/${m.outputPerMTok} per M tokens{m.available ? '' : ' · sandbox'}
+                {m.label}, ${m.inputPerMTok}/${m.outputPerMTok} per M tokens{m.available ? '' : ' (sandbox)'}
               </option>
             ))}
           </select>
