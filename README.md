@@ -77,6 +77,32 @@ Send an event the way the storefront would:
 go run ./cmd/pressroomctl dispatch ticket.created '{"ticketId":"T-9001","orderId":"SM-1046","message":"Where are my buttons?"}'
 ```
 
+## See it work: business scenarios
+
+Seven Postman scenarios walk through what Pressroom is for, with real API
+calls and assertions, and print the business outcome of each one:
+
+| Scenario | Outcome of a run on the sandbox model |
+| --- | --- |
+| Artwork becomes a proof on its own | A low-resolution logo is fixed and proofed with no human involved, for about $0.04 |
+| Refunds wait for a human | The agent drafts the reply and stops before the refund until a lead approves; the approver is on record |
+| A denied action never runs | The refund never executes; the agent is told why and still closes the ticket |
+| A cheaper model earns the job | Grok 4 Fast matches Claude Opus 5 on these tickets at about 1/30 of the cost and is promoted |
+| An agent that does not deliver is let go | 20 error-free runs, 20% of the output kept: probation, then retirement |
+| From intake request to working agent | A lead's request is scored, approved, becomes an agent and is marked shipped |
+| API errors a client can act on | Stable codes and field paths, nulls for missing objects, nothing internal leaked |
+
+```bash
+make up          # in one terminal
+make scenarios   # in another; S="02 Refunds wait for a human" runs one
+```
+
+They are stored in Postman's Native Git format (Collection v3 YAML) under
+[`postman/`](postman), so the Postman desktop app opens them straight from the
+repository. [docs/scenarios.md](docs/scenarios.md) has a diagram of every
+scenario and how to turn one into a Postman Flow. CI runs them against a fresh
+stack on every push.
+
 ## Architecture: clean architecture, not layered
 
 The decision and its trade-offs are in [ADR 0001](docs/adr/0001-clean-architecture.md).

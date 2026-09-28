@@ -225,6 +225,22 @@ feature you will meet in the code.
 | 8 | **Intake** | Submit a request, approve it, ship it with an agent | The scored backlog department leads use. |
 | 9 | **Hire an agent** | Create one, activate it on its page, then **Run it now** | Form validation (client and server), the draft/active lifecycle, a manual run. |
 
+The same stories, automated: the Postman scenarios run each one through the
+API with assertions and print its business outcome. Start here if you want to
+understand what Pressroom is for before reading code.
+
+```bash
+make scenarios                                   # all seven, against the running stack
+make scenarios S="04 A cheaper model earns the job"
+```
+
+They live in `postman/` in Postman's Native Git format (Collection v3 YAML).
+To use them in the Postman desktop app: sidebar **Files** icon, **Open
+folder**, pick the repository root, switch to **Local View**, select the
+**Pressroom Local** environment and run a scenario folder with the Collection
+Runner. [docs/scenarios.md](docs/scenarios.md) has a diagram of each scenario
+and how to turn one into a Postman Flow.
+
 You can also send events the way the storefront would:
 
 ```bash
@@ -269,6 +285,7 @@ curl -s localhost:8080/graphql -H 'Content-Type: application/json' \
 | `make test` | All Go unit tests with the race detector; database tests are skipped | Go |
 | `make test-integration` | Everything above plus repositories, the queue and GraphQL end to end on Postgres (creates `pressroom_test` in the Docker database) | Go, Docker |
 | `make test-web` | Dashboard typecheck and Vitest | Node, pnpm |
+| `make scenarios` | The seven Postman business scenarios against the running stack, failing if any step is skipped | Node, a running stack (`make up`) |
 | `make lint` | `go vet` and a `gofmt` check | Go |
 | `make check-generated` | Regenerates GraphQL code and fails if anything changed | Go, pnpm |
 | `make ci` | lint, integration tests and web checks, like CI | all of the above |
