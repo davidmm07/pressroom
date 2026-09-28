@@ -1,5 +1,6 @@
-# Local stack: `make up`, then open http://localhost:3000
-# (set WEB_PORT to use another port).
+# Local stack: `make up`, then open http://localhost:3300.
+# Host ports avoid 5432 and 3000 so other projects' databases and apps keep
+# theirs; override with PRESSROOM_DB_PORT and WEB_PORT.
 # Without API keys every agent runs on the offline sandbox model.
 name: pressroom
 
@@ -20,7 +21,7 @@ services:
       POSTGRES_USER: pressroom
       POSTGRES_PASSWORD: pressroom
       POSTGRES_DB: pressroom
-    ports: ["5432:5432"]
+    ports: ["${PRESSROOM_DB_PORT:-5433}:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pressroom"]
@@ -49,7 +50,7 @@ services:
     build: { context: ., target: api }
     environment:
       <<: *app-env
-      PRESSROOM_CORS_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:5173
+      PRESSROOM_CORS_ORIGINS: http://localhost:${WEB_PORT:-3300},http://localhost:5173
     ports: ["8080:8080"]
     extra_hosts: ["host.docker.internal:host-gateway"]
     depends_on:
@@ -73,7 +74,7 @@ services:
       context: web
       args:
         VITE_GRAPHQL_URL: http://localhost:8080/graphql
-    ports: ["${WEB_PORT:-3000}:8080"]
+    ports: ["${WEB_PORT:-3300}:8080"]
     depends_on: [api]
 
 volumes:

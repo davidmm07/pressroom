@@ -58,8 +58,8 @@ for agents on the **intake** page.
 
 ```mermaid
 flowchart LR
-  UI[Dashboard :5173 dev / :3000 docker] -- GraphQL --> API[API :8080]
-  API <--> DB[(PostgreSQL :5432)]
+  UI[Dashboard :5173 dev / :3300 docker] -- GraphQL --> API[API :8080]
+  API <--> DB[(PostgreSQL :5433)]
   EV[Events: Pub/Sub or pressroomctl dispatch] --> W[Worker :8081]
   W <--> DB
   W --> M{{Model providers}}
@@ -71,11 +71,15 @@ flowchart LR
 | API | `cmd/api` | 8080 | GraphQL for the dashboard; GraphiQL playground at `/` in development |
 | Worker | `cmd/worker` | 8081 | Claims runs from the queue and executes them; receives Pub/Sub events and the daily evaluation job |
 | CLI | `cmd/pressroomctl` | none | `migrate`, `seed`, `evaluate`, `dispatch` |
-| Dashboard | `web/` | 5173 (dev), 3000 (Docker) | React + TypeScript UI |
-| PostgreSQL | Docker | 5432 | System of record **and** the job queue |
+| Dashboard | `web/` | 5173 (dev), 3300 (Docker) | React + TypeScript UI |
+| PostgreSQL | Docker | 5433 on the host | System of record **and** the job queue |
 
 The API and the worker are separate processes sharing one database. If runs
 stay `QUEUED`, the worker is not running.
+
+Host ports deliberately avoid 5432 and 3000, which other projects on the same
+machine often use for their own Postgres and apps. Change them with
+`PRESSROOM_DB_PORT` and `WEB_PORT`; the Makefile and compose read both.
 
 ---
 
@@ -98,6 +102,10 @@ installs are far slower across that boundary.
 
 ## 4. Run it: pick a path
 
+Run one path at a time. Both serve the API on 8080 and the worker on 8081, so
+the containers from Path A cannot start while the Path B servers are running
+(and the other way round).
+
 ### Path A: everything in Docker (fastest, no Go or Node needed)
 
 1. **Start the stack** from the repository root. The first build downloads Go
@@ -108,13 +116,13 @@ installs are far slower across that boundary.
    ```
 
    Compose starts Postgres, runs the `migrations` and `seed` one-shot
-   containers, then starts `api`, `worker` and `web`. If port 3000 is taken:
+   containers, then starts `api`, `worker` and `web`. If port 3300 is taken:
 
    ```bash
-   WEB_PORT=3300 make up
+   WEB_PORT=3400 make up
    ```
 
-2. **Open the dashboard** at <http://localhost:3000> (or your `WEB_PORT`).
+2. **Open the dashboard** at <http://localhost:3300> (or your `WEB_PORT`).
    The API answers at <http://localhost:8080/graphql>.
 
 3. **Check the worker processed the seeded events.** The Approvals link in the
@@ -134,7 +142,7 @@ Use this when you are changing code. Open four terminals in the repository root.
 1. **Terminal 1: database, migrations and demo data.**
 
    ```bash
-   make db      # Postgres in Docker on :5432
+   make db      # Postgres in Docker on :5433
    make seed    # migrations, then 5 agents, a month of history, 5 queued events
    ```
 
@@ -169,7 +177,7 @@ Use this when you are changing code. Open four terminals in the repository root.
    ```
 
 `DATABASE_URL` defaults to the Docker database
-(`postgres://pressroom:pressroom@localhost:5432/pressroom?sslmode=disable`).
+(`postgres://pressroom:pressroom@localhost:5433/pressroom?sslmode=disable`).
 To load your own settings, copy the example file and export it before the
 `make` commands:
 
@@ -269,7 +277,7 @@ To run one package or one test:
 
 ```bash
 go test ./internal/app/ -run TestExecutorPausesForApprovalAndResumes -v
-PRESSROOM_TEST_DATABASE_URL=postgres://pressroom:pressroom@localhost:5432/pressroom_test?sslmode=disable \
+PRESSROOM_TEST_DATABASE_URL=postgres://pressroom:pressroom@localhost:5433/pressroom_test?sslmode=disable \
   go test ./internal/adapter/postgres/ -v
 ```
 
@@ -416,8 +424,10 @@ Dashboard build variables: `VITE_GRAPHQL_URL` (default `/graphql`),
 
 | Symptom | Cause and fix |
 | --- | --- |
-| `bind: address already in use` for port 3000 | Something else uses it. Run `WEB_PORT=3300 make up`. |
-| Port 5432 already in use | A local Postgres is running. Stop it, or change the compose port mapping and `DATABASE_URL` to match. |
+| `bind: address already in use` for port 3300 | Something else uses it. Run `WEB_PORT=3400 make up`. |
+| `bind: address already in use` for port 8080 or 8081 | The Path B servers (`make dev-api`, `make dev-worker`) are running. Stop them before `make up`, or stay on Path B. |
+| Port 5433 already in use | Pick another: `PRESSROOM_DB_PORT=5434 make db seed`. The Makefile derives `DATABASE_URL` from it. |
+| Pressroom's Postgres logs `password authentication failed for user "<other>"` | Another project's app is connecting to Pressroom's database port. Pressroom uses 5433 so it never takes the usual 5432; if you moved it to 5432, move it back. Pressroom itself is unaffected. |
 | Runs stay `QUEUED` | The worker is not running, or points at another database. Start `make dev-worker` and compare `DATABASE_URL`. |
 | Runs fail with `provider ... is not configured` | `PRESSROOM_MODEL_MODE=live` without that provider's key. Use `auto`, or set the key. |
 | Reorder Nudger runs retry and then fail | `OPEN_SOURCE_BASE_URL` points at a model server that is not running. Clear it or start the server. |

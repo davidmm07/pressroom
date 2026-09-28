@@ -18,7 +18,7 @@ import (
 
 // Integration tests run against a real database when
 // PRESSROOM_TEST_DATABASE_URL is set (CI starts a Postgres service; locally,
-// `make db-test`). Each test creates its own agents, so tests do not need
+// `make test-integration`). Each test creates its own agents, so tests do not need
 // to clean up after one another.
 func store(t *testing.T) *postgres.Store {
 	t.Helper()

@@ -1,9 +1,13 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-DATABASE_URL ?= postgres://pressroom:pressroom@localhost:5432/pressroom?sslmode=disable
-TEST_DATABASE_URL ?= postgres://pressroom:pressroom@localhost:5432/pressroom_test?sslmode=disable
-export DATABASE_URL
+# Host ports stay off the usual defaults so Pressroom can run next to other
+# projects that already use 5432 and 3000.
+PRESSROOM_DB_PORT ?= 5433
+WEB_PORT ?= 3300
+DATABASE_URL ?= postgres://pressroom:pressroom@localhost:$(PRESSROOM_DB_PORT)/pressroom?sslmode=disable
+TEST_DATABASE_URL ?= postgres://pressroom:pressroom@localhost:$(PRESSROOM_DB_PORT)/pressroom_test?sslmode=disable
+export PRESSROOM_DB_PORT WEB_PORT DATABASE_URL
 
 .PHONY: help
 help: ## List targets
@@ -12,7 +16,7 @@ help: ## List targets
 ## ---- run
 
 .PHONY: up down db
-up: ## Run the whole stack in Docker (http://localhost:3000)
+up: ## Run the whole stack in Docker (http://localhost:3300)
 	docker compose up --build
 
 down: ## Stop the stack and delete its data

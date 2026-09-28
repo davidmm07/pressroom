@@ -50,7 +50,7 @@ and approvals.
 make up
 ```
 
-Open <http://localhost:3000> (set `WEB_PORT` if 3000 is taken). The seed loads
+Open <http://localhost:3300> (set `WEB_PORT` to change it). The seed loads
 five agents, a month of history and five fresh storefront events. Within a few
 seconds the worker has processed them: two runs are waiting in **Approvals**
 (a refund and a marketing email), a champion/challenger experiment is ready to
