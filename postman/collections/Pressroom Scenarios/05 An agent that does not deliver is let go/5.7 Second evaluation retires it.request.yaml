@@ -1,0 +1,21 @@
+$kind: http-request
+name: 5.7 Second evaluation retires it
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 7000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation { evaluateCrew { evaluations { agentId decision reason statusAfter } userErrors { message } } }"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const evals = pm.response.json().data.evaluateCrew.evaluations;
+      const mine = evals.find(e => e.agentId === pm.collectionVariables.get('s5AgentId'));
+      pm.test('Still missing its targets, so it is retired', function () {
+          pm.expect(mine.decision).to.eql('RETIRE');
+          pm.expect(mine.statusAfter).to.eql('RETIRED');
+      });

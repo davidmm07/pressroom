@@ -1,0 +1,22 @@
+$kind: http-request
+name: 6.6 A draft cannot run yet
+description: The owning lead reviews the instructions before the agent does any work.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 6000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: StartRunInput!) { startRun(input: $input) { run { id } userErrors { code message } } }",
+      "variables": { "input": { "agentId": "{{s6AgentId}}", "input": { "orderId": "SM-1043" } } }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.startRun;
+      pm.test('Refused with INVALID_TRANSITION', function () {
+          pm.expect(payload.run).to.be.null;
+          pm.expect(payload.userErrors[0].code).to.eql('INVALID_TRANSITION');
+      });

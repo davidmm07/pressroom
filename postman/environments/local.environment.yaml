@@ -1,0 +1,20 @@
+name: Pressroom Local
+values:
+  # Where `make up` (or `make dev-api` / `make dev-worker`) serves Pressroom.
+  - key: apiUrl
+    value: http://localhost:8080
+    enabled: true
+  - key: workerUrl
+    value: http://localhost:8081
+    enabled: true
+  # The operator the API records for approvals and reviews.
+  - key: actor
+    value: cx-lead@example.com
+    enabled: true
+  # How the scenarios wait for the worker: poll every pollMs, give up after maxPolls.
+  - key: pollMs
+    value: '500'
+    enabled: true
+  - key: maxPolls
+    value: '120'
+    enabled: true

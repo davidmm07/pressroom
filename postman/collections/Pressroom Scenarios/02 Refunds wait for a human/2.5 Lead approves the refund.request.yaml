@@ -1,0 +1,23 @@
+$kind: http-request
+name: 2.5 Lead approves the refund
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 5000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($id: ID!) { approveToolCall(runId: $id) { run { status } userErrors { code message } } }",
+      "variables": { "id": "{{s2RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.approveToolCall;
+      pm.test('Approval accepted', function () {
+          pm.expect(payload.userErrors).to.be.empty;
+      });
+      pm.test('The run went back to the queue', function () {
+          pm.expect(payload.run.status).to.eql('QUEUED');
+      });

@@ -1,0 +1,29 @@
+$kind: http-request
+name: 1.5 Pub/Sub delivers the same message again
+description: |-
+  Pub/Sub guarantees at-least-once delivery, so duplicates happen. The message
+  ID doubles as an idempotency key: the second delivery returns the runs the
+  first one started instead of doing the work twice.
+method: POST
+url: "{{workerUrl}}/events/pubsub"
+order: 5000
+body:
+  type: json
+  content: |-
+    {
+      "message": {
+        "messageId": "{{s1MessageId}}",
+        "data": "{{s1EventData}}",
+        "attributes": { "eventType": "artwork.uploaded" }
+      },
+      "subscription": "projects/local/subscriptions/pressroom-worker-push"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const again = pm.response.json().runs;
+      const first = JSON.parse(pm.collectionVariables.get('s1RunIds'));
+      pm.test('The duplicate did not start new work', function () {
+          pm.expect(again.slice().sort()).to.eql(first.slice().sort());
+      });

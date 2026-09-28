@@ -1,0 +1,19 @@
+$kind: http-request
+name: 6.3 AI team approves it
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 3000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($id: ID!) { moveOpportunity(id: $id, status: APPROVED) { opportunity { status } userErrors { code message } } }",
+      "variables": { "id": "{{s6OpportunityId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Approved', function () {
+          pm.expect(pm.response.json().data.moveOpportunity.opportunity.status).to.eql('APPROVED');
+      });

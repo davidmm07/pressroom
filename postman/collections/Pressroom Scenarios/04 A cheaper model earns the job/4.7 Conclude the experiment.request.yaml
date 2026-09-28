@@ -1,0 +1,22 @@
+$kind: http-request
+name: 4.7 Conclude the experiment
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 7000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($id: ID!) { concludeExperiment(id: $id) { experiment { status outcome } userErrors { code message } } }",
+      "variables": { "id": "{{s4ExperimentId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.concludeExperiment;
+      pm.test('The challenger was promoted', function () {
+          pm.expect(payload.userErrors, JSON.stringify(payload.userErrors)).to.be.empty;
+          pm.expect(payload.experiment.status).to.eql('PROMOTED');
+      });
+      console.log('Decision: ' + payload.experiment.outcome);

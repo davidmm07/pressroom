@@ -1,0 +1,29 @@
+$kind: http-request
+name: 3.6 The refund never ran
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 6000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { steps { kind toolName detail } } }",
+      "variables": { "id": "{{s3RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const steps = pm.response.json().data.run.steps;
+      const denied = steps.find(s => s.kind === 'APPROVAL_DENIED');
+      const refund = steps.filter(s => s.kind === 'TOOL_CALL' && s.toolName === 'issue_refund');
+      pm.test('The denial is recorded with its reason', function () {
+          pm.expect(denied.detail.reason).to.include('nothing to refund');
+      });
+      pm.test('The agent received the reason instead of a refund', function () {
+          pm.expect(refund).to.have.lengthOf(1);
+          pm.expect(refund[0].detail.isError).to.be.true;
+          pm.expect(refund[0].detail.result).to.include('nothing to refund');
+          pm.expect(refund[0].detail.result).to.not.include('refundId');
+      });
+      console.log('Outcome: the lead said no, no money moved, and the ticket was still handled.');

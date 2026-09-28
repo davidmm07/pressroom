@@ -1,0 +1,22 @@
+$kind: http-request
+name: 7.2 Unknown objects come back null
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 2000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!, $slug: String) { run(id: $id) { id } agent(slug: $slug) { id } }",
+      "variables": { "id": "does-not-exist", "slug": "no-such-agent" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const body = pm.response.json();
+      pm.test('Null, not an error', function () {
+          pm.expect(body.errors).to.be.undefined;
+          pm.expect(body.data.run).to.be.null;
+          pm.expect(body.data.agent).to.be.null;
+      });

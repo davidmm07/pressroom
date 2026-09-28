@@ -1,0 +1,20 @@
+$kind: http-request
+name: 7.7 A made-up cursor is rejected
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 7000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($after: String) { runs(after: $after) { edges { cursor } } }",
+      "variables": { "after": "garbage" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const body = pm.response.json();
+      pm.test('BAD_USER_INPUT', function () {
+          pm.expect(body.errors[0].extensions.code).to.eql('BAD_USER_INPUT');
+      });

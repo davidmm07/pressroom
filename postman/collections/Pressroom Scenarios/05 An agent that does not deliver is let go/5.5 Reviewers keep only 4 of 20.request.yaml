@@ -1,0 +1,41 @@
+$kind: http-request
+name: 5.5 Reviewers keep only 4 of 20
+description: Reviews every run, rejecting the first 16. This step repeats itself in the Collection Runner.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 5000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: ReviewRunInput!) { reviewRun(input: $input) { run { review { verdict } } userErrors { code message } } }",
+      "variables": {
+        "input": { "runId": "{{s5ReviewRunId}}", "verdict": "{{s5Verdict}}", "note": "Generic offer, not worth sending" }
+      }
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      const ids = JSON.parse(pm.collectionVariables.get('s5RunIds'));
+      const i = Number(pm.collectionVariables.get('s5Reviewed'));
+      pm.collectionVariables.set('s5ReviewRunId', ids[i]);
+      pm.collectionVariables.set('s5Verdict', i < 16 ? 'REJECTED' : 'ACCEPTED');
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.reviewRun;
+      const i = Number(pm.collectionVariables.get('s5Reviewed')) + 1;
+      pm.collectionVariables.set('s5Reviewed', String(i));
+      if (payload.userErrors.length > 0) {
+          pm.test('Review ' + i + ' was recorded', function () {
+              pm.expect(payload.userErrors, JSON.stringify(payload.userErrors)).to.be.empty;
+          });
+      }
+      if (i < 20) {
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.test('All 20 runs reviewed', function () {
+              pm.expect(i).to.eql(20);
+          });
+      }

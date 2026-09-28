@@ -1,0 +1,25 @@
+$kind: http-request
+name: 6.2 See where it ranks
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 2000
+body:
+  type: json
+  content: |-
+    {
+      "query": "{ opportunities { id title score } }"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const list = pm.response.json().data.opportunities;
+      const rank = list.findIndex(o => o.id === pm.collectionVariables.get('s6OpportunityId')) + 1;
+      pm.test('The backlog is sorted by score', function () {
+          const scores = list.map(o => o.score);
+          pm.expect(scores).to.eql(scores.slice().sort((a, b) => b - a));
+      });
+      pm.test('The new request is in the backlog', function () {
+          pm.expect(rank).to.be.above(0);
+      });
+      console.log('Ranked #' + rank + ' of ' + list.length + ' by hours won back');

@@ -1,0 +1,21 @@
+$kind: http-request
+name: 5.8 A retired agent cannot take work
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 8000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: StartRunInput!) { startRun(input: $input) { run { id } userErrors { field code message } } }",
+      "variables": { "input": { "agentId": "{{s5AgentId}}", "input": { "customerEmail": "priya.nair@example.com" } } }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.startRun;
+      pm.test('The run is refused with INVALID_TRANSITION', function () {
+          pm.expect(payload.run).to.be.null;
+          pm.expect(payload.userErrors[0].code).to.eql('INVALID_TRANSITION');
+      });

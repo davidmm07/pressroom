@@ -1,0 +1,36 @@
+$kind: http-request
+name: 2.1 Customer reports damaged magnets
+method: POST
+url: "{{workerUrl}}/events/pubsub"
+order: 1000
+body:
+  type: json
+  content: |-
+    {
+      "message": {
+        "messageId": "{{s2MessageId}}",
+        "data": "{{s2EventData}}",
+        "attributes": { "eventType": "ticket.created" }
+      },
+      "subscription": "projects/local/subscriptions/pressroom-worker-push"
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      const ticket = {
+          ticketId: 'T-' + Date.now(),
+          orderId: 'SM-1045',
+          customerEmail: 'ana.lopez@example.com',
+          message: 'Two of the magnets arrived cracked. Could I get a partial refund?',
+          amountCents: 1500
+      };
+      pm.collectionVariables.set('s2MessageId', 'postman-ticket-' + Date.now());
+      pm.collectionVariables.set('s2EventData', btoa(JSON.stringify(ticket)));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Worker accepted the ticket', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.collectionVariables.set('s2RunIds', JSON.stringify(pm.response.json().runs));

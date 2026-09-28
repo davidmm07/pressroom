@@ -1,0 +1,29 @@
+$kind: http-request
+name: 2.7 The audit trail names the approver
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 7000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { cost steps { index kind toolName detail } } }",
+      "variables": { "id": "{{s2RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const granted = run.steps.find(s => s.kind === 'APPROVAL_GRANTED');
+      const refund = run.steps.find(s => s.kind === 'TOOL_CALL' && s.toolName === 'issue_refund');
+      pm.test('The approval is recorded with the approver', function () {
+          pm.expect(granted.detail.approver).to.eql(pm.environment.get('actor'));
+      });
+      pm.test('The refund ran only after the approval, and succeeded', function () {
+          pm.expect(refund.index).to.be.above(granted.index);
+          pm.expect(refund.detail.isError).to.be.false;
+          pm.expect(JSON.parse(refund.detail.result).refundId).to.be.a('string');
+      });
+      console.log('Outcome: ticket researched, reply drafted and $15.00 refunded after one click from ' +
+          granted.detail.approver + '. Model cost $' + Number(run.cost).toFixed(4) + '.');

@@ -1,0 +1,22 @@
+$kind: http-request
+name: 7.3 Read Proof Checker and its version
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 3000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($slug: String!) { agent(slug: $slug) { id version } }",
+      "variables": { "slug": "proof-checker" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const agent = pm.response.json().data.agent;
+      pm.test('Every agent carries a version', function () {
+          pm.expect(agent.version).to.be.a('number');
+      });
+      pm.collectionVariables.set('s7AgentId', agent.id);
+      pm.collectionVariables.set('s7StaleVersion', String(agent.version + 100));

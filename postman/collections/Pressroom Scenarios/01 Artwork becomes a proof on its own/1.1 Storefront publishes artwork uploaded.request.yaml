@@ -1,0 +1,48 @@
+$kind: http-request
+name: 1.1 Storefront publishes artwork uploaded
+description: |-
+  Posts a Pub/Sub push envelope to the worker, exactly what Google Pub/Sub
+  sends in production. The event payload is base64 encoded in `message.data`
+  and the event type travels as the `eventType` attribute.
+method: POST
+url: "{{workerUrl}}/events/pubsub"
+order: 1000
+body:
+  type: json
+  content: |-
+    {
+      "message": {
+        "messageId": "{{s1MessageId}}",
+        "data": "{{s1EventData}}",
+        "attributes": { "eventType": "artwork.uploaded" }
+      },
+      "subscription": "projects/local/subscriptions/pressroom-worker-push"
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      const upload = {
+          orderId: 'SM-1048',
+          artworkUrl: 'https://cdn.example.com/uploads/sm-1048/fox-logo.png',
+          product: 'STICKERS',
+          widthPx: 600,
+          heightPx: 600,
+          printWidthIn: 3,
+          printHeightIn: 3,
+          colorMode: 'RGB',
+          hasTransparentBackground: false
+      };
+      pm.collectionVariables.set('s1MessageId', 'postman-artwork-' + Date.now());
+      pm.collectionVariables.set('s1EventData', btoa(JSON.stringify(upload)));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Worker accepted the event', function () {
+          pm.response.to.have.status(200);
+      });
+      const runs = pm.response.json().runs;
+      pm.test('The event started at least one run', function () {
+          pm.expect(runs).to.be.an('array').that.is.not.empty;
+      });
+      pm.collectionVariables.set('s1RunIds', JSON.stringify(runs));

@@ -1,0 +1,36 @@
+$kind: http-request
+name: 3.1 Customer asks for a shipping refund
+method: POST
+url: "{{workerUrl}}/events/pubsub"
+order: 1000
+body:
+  type: json
+  content: |-
+    {
+      "message": {
+        "messageId": "{{s3MessageId}}",
+        "data": "{{s3EventData}}",
+        "attributes": { "eventType": "ticket.created" }
+      },
+      "subscription": "projects/local/subscriptions/pressroom-worker-push"
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      const ticket = {
+          ticketId: 'T-' + Date.now(),
+          orderId: 'SM-1042',
+          customerEmail: 'ana.lopez@example.com',
+          message: 'Could you refund what I paid for shipping?',
+          amountCents: 2000
+      };
+      pm.collectionVariables.set('s3MessageId', 'postman-ticket-' + Date.now());
+      pm.collectionVariables.set('s3EventData', btoa(JSON.stringify(ticket)));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Worker accepted the ticket', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.collectionVariables.set('s3RunIds', JSON.stringify(pm.response.json().runs));

@@ -1,0 +1,29 @@
+$kind: http-request
+name: 3.3 Wait for the refund proposal
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 3000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { status failureReason pendingToolCall { arguments tool { name } } } }",
+      "variables": { "id": "{{s3RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const polls = Number(pm.collectionVariables.get('polls') || 0);
+      if (['QUEUED', 'RUNNING'].includes(run.status) && polls < Number(pm.environment.get('maxPolls'))) {
+          pm.collectionVariables.set('polls', String(polls + 1));
+          setTimeout(function () {}, Number(pm.environment.get('pollMs')));
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.collectionVariables.set('polls', '0');
+          pm.test('The agent proposed a refund and paused', function () {
+              pm.expect(run.status, run.failureReason).to.eql('AWAITING_APPROVAL');
+              pm.expect(run.pendingToolCall.tool.name).to.eql('issue_refund');
+          });
+      }

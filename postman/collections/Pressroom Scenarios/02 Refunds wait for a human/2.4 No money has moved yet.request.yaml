@@ -1,0 +1,27 @@
+$kind: http-request
+name: 2.4 No money has moved yet
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 4000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { steps { kind toolName } } crew { awaitingApproval } }",
+      "variables": { "id": "{{s2RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const data = pm.response.json().data;
+      const refunds = data.run.steps.filter(s => s.kind === 'TOOL_CALL' && s.toolName === 'issue_refund');
+      pm.test('The refund tool has not run', function () {
+          pm.expect(refunds).to.be.empty;
+      });
+      pm.test('The last step is the approval request', function () {
+          pm.expect(data.run.steps[data.run.steps.length - 1].kind).to.eql('APPROVAL_REQUESTED');
+      });
+      pm.test('It shows up in the approvals queue', function () {
+          pm.expect(data.crew.awaitingApproval).to.be.at.least(1);
+      });

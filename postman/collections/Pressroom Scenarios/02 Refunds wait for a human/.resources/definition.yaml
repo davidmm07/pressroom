@@ -1,0 +1,16 @@
+$kind: collection
+name: 02 Refunds wait for a human
+order: 2000
+description: |-
+  **Why it matters.** Support Triage researches every new ticket and drafts
+  the reply on its own, which is most of a support agent's time. But some
+  actions move money. `issue_refund` is flagged as needing approval, so the
+  run pauses, a lead sees exactly what the agent wants to do, and one click
+  lets it continue. The trace records who approved.
+
+  **What this scenario proves.**
+  1. A customer reports cracked magnets and asks for $15 back.
+  2. The agent looks up the order, drafts a reply, proposes the refund, and
+     stops. No money has moved.
+  3. The lead approves; the run resumes where it paused and finishes.
+  4. The audit trail names the approver, and the lead's review is final.

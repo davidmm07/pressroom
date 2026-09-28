@@ -1,0 +1,23 @@
+$kind: http-request
+name: 4.8 The agent now runs on Grok 4 Fast
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 8000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { agent(id: $id) { model { id } activeExperiment { id } } }",
+      "variables": { "id": "{{s4AgentId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const agent = pm.response.json().data.agent;
+      pm.test('Grok 4 Fast is the new model and the experiment is closed', function () {
+          pm.expect(agent.model.id).to.eql('xai/grok-4-fast');
+          pm.expect(agent.activeExperiment).to.be.null;
+      });
+      const saved = (Number(pm.collectionVariables.get('s4ChampionCost')) - Number(pm.collectionVariables.get('s4ChallengerCost'))) * 1000;
+      console.log('Outcome: same quality, $' + saved.toFixed(2) + ' less per 1,000 tickets.');

@@ -1,0 +1,28 @@
+$kind: http-request
+name: 3.5 Wait for the agent to wrap up
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 5000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { status failureReason output } }",
+      "variables": { "id": "{{s3RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const polls = Number(pm.collectionVariables.get('polls') || 0);
+      if (['QUEUED', 'RUNNING'].includes(run.status) && polls < Number(pm.environment.get('maxPolls'))) {
+          pm.collectionVariables.set('polls', String(polls + 1));
+          setTimeout(function () {}, Number(pm.environment.get('pollMs')));
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.collectionVariables.set('polls', '0');
+          pm.test('The agent finished the ticket without the refund', function () {
+              pm.expect(run.status, run.failureReason).to.eql('SUCCEEDED');
+          });
+      }

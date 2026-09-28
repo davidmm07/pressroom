@@ -1,0 +1,18 @@
+$kind: collection
+name: 05 An agent that does not deliver is let go
+order: 5000
+description: |-
+  **Why it matters.** An agent that runs without errors can still be useless:
+  if people throw its output away, it costs money and saves nothing. The
+  retirement policy judges agents on what reviewers keep, not on how busy
+  they are. Missing the targets once means probation; missing them again
+  means retirement, and a retired agent cannot take any more work.
+
+  **What this scenario proves.**
+  1. A new reorder agent handles 20 customers without a single error.
+  2. Reviewers keep only 4 of the 20 drafts (20%, target 70%).
+  3. The first evaluation puts it on probation and says why.
+  4. The second evaluation retires it, and new work is refused.
+
+  Note: the evaluation covers the whole crew, so it also evaluates the demo
+  agents (the demo's Reorder Nudger ends up on probation or retired too).

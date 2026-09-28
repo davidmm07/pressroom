@@ -1,0 +1,27 @@
+$kind: http-request
+name: 5.6 First evaluation puts it on probation
+description: In production this runs every morning from Cloud Scheduler.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 6000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation { evaluateCrew { evaluations { agentId decision reason statusBefore statusAfter scorecard { acceptanceRate } } userErrors { message } } }"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const evals = pm.response.json().data.evaluateCrew.evaluations;
+      const mine = evals.find(e => e.agentId === pm.collectionVariables.get('s5AgentId'));
+      pm.test('Put on probation', function () {
+          pm.expect(mine.decision).to.eql('PROBATION');
+          pm.expect(mine.statusAfter).to.eql('PROBATION');
+      });
+      pm.test('Because reviewers kept only 20% of its work', function () {
+          pm.expect(mine.scorecard.acceptanceRate).to.eql(0.2);
+          pm.expect(mine.reason).to.include('reviewers accepted 20%');
+      });
+      console.log('Reason: ' + mine.reason);

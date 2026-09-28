@@ -1,0 +1,32 @@
+$kind: http-request
+name: 1.3 Wait for the Proof Checker
+description: Polls the run until the worker finishes it. In the Collection Runner this step repeats itself.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 3000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { status failureReason turns cost durationSeconds model { id } } }",
+      "variables": { "id": "{{s1RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const polls = Number(pm.collectionVariables.get('polls') || 0);
+      const finished = ['SUCCEEDED', 'FAILED', 'CANCELLED'].includes(run.status);
+      if (!finished && polls < Number(pm.environment.get('maxPolls'))) {
+          pm.collectionVariables.set('polls', String(polls + 1));
+          setTimeout(function () {}, Number(pm.environment.get('pollMs')));
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.collectionVariables.set('polls', '0');
+          pm.test('The agent finished the job on its own', function () {
+              pm.expect(run.status, run.failureReason).to.eql('SUCCEEDED');
+          });
+          pm.collectionVariables.set('s1Seconds', String(run.durationSeconds));
+          pm.collectionVariables.set('s1Cost', run.cost);
+      }

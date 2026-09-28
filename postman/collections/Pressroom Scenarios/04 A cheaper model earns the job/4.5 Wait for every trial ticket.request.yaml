@@ -1,0 +1,28 @@
+$kind: http-request
+name: 4.5 Wait for every trial ticket
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 5000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { agent(id: $id) { runs(status: [QUEUED, RUNNING], first: 1) { edges { node { id } } } } }",
+      "variables": { "id": "{{s4AgentId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const busy = pm.response.json().data.agent.runs.edges.length > 0;
+      const polls = Number(pm.collectionVariables.get('polls') || 0);
+      if (busy && polls < Number(pm.environment.get('maxPolls'))) {
+          pm.collectionVariables.set('polls', String(polls + 1));
+          setTimeout(function () {}, Number(pm.environment.get('pollMs')));
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.collectionVariables.set('polls', '0');
+          pm.test('Every trial ticket was handled', function () {
+              pm.expect(busy).to.be.false;
+          });
+      }

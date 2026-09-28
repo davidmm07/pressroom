@@ -1,0 +1,41 @@
+$kind: http-request
+name: 6.1 Ops lead submits a request
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 1000
+headers:
+  X-Pressroom-Actor: ops-lead@example.com
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: SubmitOpportunityInput!) { submitOpportunity(input: $input) { opportunity { id status submittedBy hoursPerWeek feasibility score } userErrors { field code message } } }",
+      "variables": {
+        "input": {
+          "title": "Catch address typos before orders ship",
+          "problem": "About 80 orders a week need someone to compare the address with the customer's history before labels print.",
+          "department": "OPERATIONS",
+          "weeklyVolume": 80,
+          "minutesPerTask": 5,
+          "dataSensitivity": "MEDIUM",
+          "errorCost": "LOW"
+        }
+      }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.submitOpportunity;
+      const o = payload.opportunity;
+      pm.test('Request recorded against the lead', function () {
+          pm.expect(payload.userErrors, JSON.stringify(payload.userErrors)).to.be.empty;
+          pm.expect(o.status).to.eql('SUBMITTED');
+          pm.expect(o.submittedBy).to.eql('ops-lead@example.com');
+      });
+      pm.test('Scored: 6.7 hours a week x 0.85 feasibility = 5.7', function () {
+          pm.expect(o.hoursPerWeek).to.be.closeTo(6.67, 0.01);
+          pm.expect(o.feasibility).to.eql(0.85);
+          pm.expect(o.score).to.eql(5.7);
+      });
+      pm.collectionVariables.set('s6OpportunityId', o.id);

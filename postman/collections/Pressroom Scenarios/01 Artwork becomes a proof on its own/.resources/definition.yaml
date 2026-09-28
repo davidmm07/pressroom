@@ -1,0 +1,18 @@
+$kind: collection
+name: 01 Artwork becomes a proof on its own
+order: 1000
+description: |-
+  **Why it matters.** Every upload needs a pre-flight check before the free
+  online proof goes out: is the resolution high enough at the ordered size,
+  does a die-cut sticker have a transparent background. A prepress technician
+  spends about six minutes per upload. The Proof Checker agent does it the
+  moment the storefront publishes `artwork.uploaded`, fixes what it can with
+  the image studio, and sends the proof. Nobody is involved.
+
+  **What this scenario proves.**
+  1. The storefront's event reaches the worker the way Pub/Sub delivers it.
+  2. The agent inspects a 600 px logo ordered at 3 x 3 in (200 DPI, needs 300)
+     with an opaque background, upscales it 2x, removes the background, and
+     sends the proof. It never calls the vectorizer, because the inspection
+     said it was not needed.
+  3. Pub/Sub delivering the same message again does not start a second run.

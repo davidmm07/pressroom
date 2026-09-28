@@ -1,0 +1,14 @@
+$kind: collection
+name: 03 A denied action never runs
+order: 3000
+description: |-
+  **Why it matters.** Approval only means something if "no" is safe. When a
+  lead denies an action, the tool never executes. The agent is told why, as a
+  tool error it can read, and finishes the ticket without it.
+
+  **What this scenario proves.**
+  1. A customer asks for a shipping refund, which does not exist: shipping is free.
+  2. The agent proposes a refund and pauses.
+  3. The lead denies it with a reason; the run resumes and completes.
+  4. The trace shows the denial, and the refund call carries the lead's
+     reason instead of a refund ID.

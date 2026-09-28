@@ -1,0 +1,20 @@
+$kind: http-request
+name: 7.5 Find a finished run
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 5000
+body:
+  type: json
+  content: |-
+    {
+      "query": "{ runs(status: [SUCCEEDED], first: 1) { edges { node { id } } } }"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const edges = pm.response.json().data.runs.edges;
+      pm.test('There is a finished run', function () {
+          pm.expect(edges).to.have.lengthOf(1);
+      });
+      pm.collectionVariables.set('s7RunId', edges[0].node.id);

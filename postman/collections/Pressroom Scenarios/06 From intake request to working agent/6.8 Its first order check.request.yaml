@@ -1,0 +1,22 @@
+$kind: http-request
+name: 6.8 Its first order check
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 8000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: StartRunInput!) { startRun(input: $input) { run { id status } userErrors { code message } } }",
+      "variables": { "input": { "agentId": "{{s6AgentId}}", "input": { "orderId": "SM-1043" } } }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.startRun;
+      pm.test('Run queued', function () {
+          pm.expect(payload.userErrors, JSON.stringify(payload.userErrors)).to.be.empty;
+          pm.expect(payload.run.status).to.eql('QUEUED');
+      });
+      pm.collectionVariables.set('s6RunId', payload.run.id);

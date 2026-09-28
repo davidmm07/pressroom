@@ -1,0 +1,21 @@
+$kind: http-request
+name: 7.8 A malformed event is acknowledged not retried
+description: |-
+  Pub/Sub redelivers anything that is not acknowledged. A message that can
+  never be processed is acknowledged (204) and logged instead of looping forever.
+method: POST
+url: "{{workerUrl}}/events/pubsub"
+order: 8000
+body:
+  type: json
+  content: |-
+    {
+      "message": { "messageId": "postman-broken", "data": "%%% not base64 %%%", "attributes": {} }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('204 No Content: acknowledged and dropped', function () {
+          pm.response.to.have.status(204);
+      });

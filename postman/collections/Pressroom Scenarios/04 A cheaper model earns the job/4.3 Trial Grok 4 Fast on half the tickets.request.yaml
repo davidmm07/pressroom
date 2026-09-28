@@ -1,0 +1,34 @@
+$kind: http-request
+name: 4.3 Trial Grok 4 Fast on half the tickets
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 3000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: StartExperimentInput!) { startExperiment(input: $input) { experiment { id status champion { id } challenger { id } trafficPercent } userErrors { field code message } } }",
+      "variables": {
+        "input": {
+          "agentId": "{{s4AgentId}}",
+          "challenger": "xai/grok-4-fast",
+          "trafficPercent": 50,
+          "hypothesis": "Grok 4 Fast handles tracking tickets as well as Opus 5 for much less"
+        }
+      }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.startExperiment;
+      pm.test('Experiment running: Opus 5 against Grok 4 Fast at 50%', function () {
+          pm.expect(payload.userErrors, JSON.stringify(payload.userErrors)).to.be.empty;
+          pm.expect(payload.experiment.status).to.eql('RUNNING');
+          pm.expect(payload.experiment.champion.id).to.eql('anthropic/claude-opus-5');
+          pm.expect(payload.experiment.challenger.id).to.eql('xai/grok-4-fast');
+      });
+      pm.collectionVariables.set('s4ExperimentId', payload.experiment.id);
+      pm.collectionVariables.set('s4Sent', '0');
+      pm.collectionVariables.set('s4Champion', '0');
+      pm.collectionVariables.set('s4Challenger', '0');

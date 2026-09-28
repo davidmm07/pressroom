@@ -1,0 +1,22 @@
+$kind: http-request
+name: 7.6 Approving a run that is not waiting
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 6000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($id: ID!) { approveToolCall(runId: $id) { run { id } userErrors { code message } } }",
+      "variables": { "id": "{{s7RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.approveToolCall;
+      pm.test('INVALID_TRANSITION, with a readable message', function () {
+          pm.expect(payload.run).to.be.null;
+          pm.expect(payload.userErrors[0].code).to.eql('INVALID_TRANSITION');
+          pm.expect(payload.userErrors[0].message).to.include('SUCCEEDED');
+      });

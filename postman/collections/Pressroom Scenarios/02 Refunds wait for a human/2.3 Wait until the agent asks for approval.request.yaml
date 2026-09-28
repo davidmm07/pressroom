@@ -1,0 +1,34 @@
+$kind: http-request
+name: 2.3 Wait until the agent asks for approval
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 3000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { status failureReason model { id } pendingToolCall { arguments tool { name requiresApproval } } } }",
+      "variables": { "id": "{{s2RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const polls = Number(pm.collectionVariables.get('polls') || 0);
+      if (['QUEUED', 'RUNNING'].includes(run.status) && polls < Number(pm.environment.get('maxPolls'))) {
+          pm.collectionVariables.set('polls', String(polls + 1));
+          setTimeout(function () {}, Number(pm.environment.get('pollMs')));
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.collectionVariables.set('polls', '0');
+          pm.test('The run paused for a human', function () {
+              pm.expect(run.status, run.failureReason).to.eql('AWAITING_APPROVAL');
+          });
+          pm.test('It wants to refund $15.00 on SM-1045', function () {
+              pm.expect(run.pendingToolCall.tool.name).to.eql('issue_refund');
+              pm.expect(run.pendingToolCall.tool.requiresApproval).to.be.true;
+              pm.expect(run.pendingToolCall.arguments.amountCents).to.eql(1500);
+              pm.expect(run.pendingToolCall.arguments.orderId).to.eql('SM-1045');
+          });
+      }

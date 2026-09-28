@@ -1,0 +1,22 @@
+$kind: http-request
+name: 5.9 Its record explains the decision
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 9000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { agent(id: $id) { name status evaluations(last: 5) { decision reason } scorecard { finishedRuns totalCost hoursSaved } } }",
+      "variables": { "id": "{{s5AgentId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const agent = pm.response.json().data.agent;
+      pm.test('Retired, with both decisions on record', function () {
+          pm.expect(agent.status).to.eql('RETIRED');
+          pm.expect(agent.evaluations.map(e => e.decision)).to.eql(['RETIRE', 'PROBATION']);
+      });
+      console.log('Outcome: ' + agent.name + ' ran ' + agent.scorecard.finishedRuns + ' times without errors, but people kept 20% of its work. Retired automatically.');

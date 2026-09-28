@@ -1,0 +1,23 @@
+$kind: http-request
+name: 2.8 Lead reviews the result
+description: Reviews feed the acceptance rate on the agent's scorecard.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 8000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($id: ID!, $note: String) { reviewRun(input: { runId: $id, verdict: ACCEPTED, note: $note }) { run { review { verdict reviewer } } userErrors { code message } } }",
+      "variables": { "id": "{{s2RunId}}", "note": "Refund and reply look right" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.reviewRun;
+      pm.test('Review recorded against the lead', function () {
+          pm.expect(payload.userErrors).to.be.empty;
+          pm.expect(payload.run.review.verdict).to.eql('ACCEPTED');
+          pm.expect(payload.run.review.reviewer).to.eql(pm.environment.get('actor'));
+      });

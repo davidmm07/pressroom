@@ -1,0 +1,49 @@
+$kind: http-request
+name: 4.4 Send tickets until both arms have enough
+description: |-
+  Starts runs until each arm has at least 12 (the comparison needs 10 finished
+  runs per arm). Which arm serves a run is decided by hashing its ID, so the
+  split is close to 50/50 and stable if a run is retried. This step repeats
+  itself in the Collection Runner.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 4000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: StartRunInput!) { startRun(input: $input) { run { id variant model { id } } userErrors { code message } } }",
+      "variables": {
+        "input": {
+          "agentId": "{{s4AgentId}}",
+          "idempotencyKey": "{{s4TicketId}}",
+          "input": { "ticketId": "{{s4TicketId}}", "orderId": "SM-1046", "message": "Where are my buttons?" }
+        }
+      }
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      const sent = Number(pm.collectionVariables.get('s4Sent') || 0);
+      pm.collectionVariables.set('s4TicketId', 'T-' + Date.now() + String(sent).padStart(3, '0'));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.startRun;
+      const sent = Number(pm.collectionVariables.get('s4Sent')) + 1;
+      const key = payload.run.variant === 'CHALLENGER' ? 's4Challenger' : 's4Champion';
+      pm.collectionVariables.set(key, String(Number(pm.collectionVariables.get(key)) + 1));
+      pm.collectionVariables.set('s4Sent', String(sent));
+
+      const champion = Number(pm.collectionVariables.get('s4Champion'));
+      const challenger = Number(pm.collectionVariables.get('s4Challenger'));
+      if ((champion < 12 || challenger < 12) && sent < 80) {
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.test('Both arms received at least 12 tickets', function () {
+              pm.expect(champion).to.be.at.least(12);
+              pm.expect(challenger).to.be.at.least(12);
+          });
+          console.log('Tickets sent: ' + sent + ' (champion ' + champion + ', challenger ' + challenger + ')');
+      }

@@ -1,0 +1,27 @@
+$kind: http-request
+name: 1.2 Find the Proof Checker run
+description: An event can wake several agents. This picks the run that belongs to the Proof Checker.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 2000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($slug: String!) { agent(slug: $slug) { name runs(first: 20) { edges { node { id } } } } }",
+      "variables": { "slug": "proof-checker" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const body = pm.response.json();
+      pm.test('GraphQL returned no errors', function () {
+          pm.expect(body.errors, JSON.stringify(body.errors)).to.be.undefined;
+      });
+      const started = JSON.parse(pm.collectionVariables.get('s1RunIds') || '[]');
+      const mine = body.data.agent.runs.edges.map(e => e.node.id).find(id => started.includes(id));
+      pm.test('The Proof Checker picked up the upload', function () {
+          pm.expect(mine, 'run id').to.be.a('string');
+      });
+      pm.collectionVariables.set('s1RunId', mine);

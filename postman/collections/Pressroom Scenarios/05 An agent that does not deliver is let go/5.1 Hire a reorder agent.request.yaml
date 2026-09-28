@@ -1,0 +1,38 @@
+$kind: http-request
+name: 5.1 Hire a reorder agent
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 1000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: CreateAgentInput!) { createAgent(input: $input) { agent { id status } userErrors { field code message } } }",
+      "variables": {
+        "input": {
+          "slug": "{{s5Slug}}",
+          "name": "Reorder Trial",
+          "department": "MARKETING",
+          "owner": "growth-lead@example.com",
+          "instructions": "Look up the customer's history and create a promo code for their last product line.",
+          "model": "open_source/qwen/qwen3-32b",
+          "tools": ["lookup_customer", "create_promo_code"],
+          "maxSteps": 5,
+          "maxCost": "0.10",
+          "minutesSavedPerRun": 4
+        }
+      }
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.collectionVariables.set('s5Slug', 'reorder-trial-' + Date.now().toString(36));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.createAgent;
+      pm.test('Agent created', function () {
+          pm.expect(payload.userErrors, JSON.stringify(payload.userErrors)).to.be.empty;
+      });
+      pm.collectionVariables.set('s5AgentId', payload.agent.id);

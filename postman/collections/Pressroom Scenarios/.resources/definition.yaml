@@ -1,0 +1,45 @@
+$kind: collection
+name: Pressroom Scenarios
+description: |-
+  Seven business scenarios that show what Pressroom is for, each one a folder
+  you can run on its own. Every scenario answers a question a company asks
+  before it lets AI agents do real work:
+
+  1. **Artwork becomes a proof on its own.** Can an agent finish a task end to end, with no human in the loop?
+  2. **Refunds wait for a human.** Can it act on its own without being trusted with money?
+  3. **A denied action never runs.** What happens when a person says no?
+  4. **A cheaper model earns the job.** How do we adopt a new model safely, on evidence?
+  5. **An agent that does not deliver is let go.** How do we stop paying for automations nobody uses?
+  6. **From intake request to working agent.** How does a department get an agent, and how do we prove it shipped?
+  7. **API errors a client can act on.** What does a developer get back when something is wrong?
+
+  Requirements: the stack running with its demo data (`make up`), without model
+  API keys so every agent uses the free, deterministic sandbox model. Scenarios
+  create their own agents where they change state, so they can run again and
+  again. Scenario 5 runs the crew-wide evaluation, which also evaluates the
+  demo agents.
+
+  Run everything with `make scenarios`, one scenario with
+  `make scenarios S="02 Refunds wait for a human"`, or open the collection in
+  the Postman desktop app and use the Collection Runner. Diagrams of every
+  scenario are in docs/scenarios.md.
+scripts:
+  - type: http:beforeRequest
+    language: text/javascript
+    code: |-
+      // Every request speaks JSON and names the operator, unless it sets its own.
+      if (!pm.request.headers.has('Content-Type')) {
+          pm.request.headers.add({ key: 'Content-Type', value: 'application/json' });
+      }
+      if (!pm.request.headers.has('X-Pressroom-Actor')) {
+          pm.request.headers.add({ key: 'X-Pressroom-Actor', value: pm.environment.get('actor') });
+      }
+  - type: http:afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('[contract] No server error', function () {
+          pm.expect(pm.response.code).to.be.below(500);
+      });
+      // The Postman CLI silently skips request files it cannot parse.
+      // scripts/scenarios.sh checks every step number shows up here.
+      console.log('step', pm.info.requestName.split(' ')[0]);

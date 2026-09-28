@@ -1,0 +1,16 @@
+$kind: collection
+name: 06 From intake request to working agent
+order: 6000
+description: |-
+  **Why it matters.** Department leads know which work eats their team's
+  time. Intake turns their requests into a backlog ranked by hours won back,
+  discounted for risky data and costly mistakes. When an agent ships, the
+  request is linked to it, so leadership can trace every agent to the need
+  it answers and every need to what became of it.
+
+  **What this scenario proves.**
+  1. The operations lead submits a request and sees its score and rank.
+  2. The AI team approves it.
+  3. A first attempt at the agent is rejected with every mistake listed at once.
+  4. The agent is hired as a draft; a draft cannot run until its owner activates it.
+  5. It runs, and the request is marked shipped with the agent that does the work.

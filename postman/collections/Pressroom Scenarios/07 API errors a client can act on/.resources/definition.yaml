@@ -1,0 +1,8 @@
+$kind: collection
+name: 07 API errors a client can act on
+order: 7000
+description: |-
+  **Why it matters.** Integrations fail at the edges. Pressroom's API tells a
+  client what went wrong in a form it can act on: expected problems come back
+  in `userErrors` with a stable code, invalid input is `BAD_USER_INPUT`,
+  missing objects are `null`, and nothing internal leaks. See docs/api.md.

@@ -1,0 +1,29 @@
+$kind: http-request
+name: 7.1 Money with seven decimals is rejected
+description: The USD scalar refuses to round silently.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 1000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: CreateAgentInput!) { createAgent(input: $input) { agent { id } } }",
+      "variables": {
+        "input": {
+          "slug": "never-created", "name": "Never", "department": "FINANCE", "owner": "finance-lead@example.com",
+          "instructions": "x", "model": "sandbox/planner", "tools": ["lookup_order"],
+          "maxSteps": 3, "maxCost": "0.1234567", "minutesSavedPerRun": 1
+        }
+      }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const body = pm.response.json();
+      pm.test('Top-level BAD_USER_INPUT, nothing created', function () {
+          pm.expect(body.errors[0].extensions.code).to.eql('BAD_USER_INPUT');
+          pm.expect(body.errors[0].message).to.include('six decimal places');
+          pm.expect(body.data).to.be.null;
+      });

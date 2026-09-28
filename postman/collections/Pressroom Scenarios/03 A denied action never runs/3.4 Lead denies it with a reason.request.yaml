@@ -1,0 +1,21 @@
+$kind: http-request
+name: 3.4 Lead denies it with a reason
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 4000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($id: ID!, $reason: String!) { denyToolCall(runId: $id, reason: $reason) { run { status } userErrors { code message } } }",
+      "variables": { "id": "{{s3RunId}}", "reason": "Shipping is free worldwide, there is nothing to refund" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.denyToolCall;
+      pm.test('Denial accepted and the run went back to the queue', function () {
+          pm.expect(payload.userErrors).to.be.empty;
+          pm.expect(payload.run.status).to.eql('QUEUED');
+      });

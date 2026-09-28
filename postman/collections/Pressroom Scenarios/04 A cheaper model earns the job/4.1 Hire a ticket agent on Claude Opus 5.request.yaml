@@ -1,0 +1,40 @@
+$kind: http-request
+name: 4.1 Hire a ticket agent on Claude Opus 5
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 1000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: CreateAgentInput!) { createAgent(input: $input) { agent { id slug status model { id } } userErrors { field code message } } }",
+      "variables": {
+        "input": {
+          "slug": "{{s4Slug}}",
+          "name": "Ticket Trial",
+          "department": "CUSTOMER_EXPERIENCE",
+          "owner": "cx-lead@example.com",
+          "instructions": "Look up the order, track the parcel and draft a short reply to the customer.",
+          "model": "anthropic/claude-opus-5",
+          "tools": ["lookup_order", "track_shipment", "draft_reply"],
+          "maxSteps": 8,
+          "maxCost": "0.75",
+          "minutesSavedPerRun": 7
+        }
+      }
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.collectionVariables.set('s4Slug', 'ticket-trial-' + Date.now().toString(36));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.createAgent;
+      pm.test('Agent created as a draft on Claude Opus 5', function () {
+          pm.expect(payload.userErrors, JSON.stringify(payload.userErrors)).to.be.empty;
+          pm.expect(payload.agent.status).to.eql('DRAFT');
+          pm.expect(payload.agent.model.id).to.eql('anthropic/claude-opus-5');
+      });
+      pm.collectionVariables.set('s4AgentId', payload.agent.id);

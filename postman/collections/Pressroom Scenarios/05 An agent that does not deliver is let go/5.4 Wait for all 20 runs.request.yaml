@@ -1,0 +1,30 @@
+$kind: http-request
+name: 5.4 Wait for all 20 runs
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 4000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { agent(id: $id) { runs(status: [QUEUED, RUNNING], first: 1) { edges { node { id } } } scorecard { finishedRuns successRate } } }",
+      "variables": { "id": "{{s5AgentId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const agent = pm.response.json().data.agent;
+      const busy = agent.runs.edges.length > 0;
+      const polls = Number(pm.collectionVariables.get('polls') || 0);
+      if (busy && polls < Number(pm.environment.get('maxPolls'))) {
+          pm.collectionVariables.set('polls', String(polls + 1));
+          setTimeout(function () {}, Number(pm.environment.get('pollMs')));
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.collectionVariables.set('polls', '0');
+          pm.test('All 20 runs finished without errors', function () {
+              pm.expect(agent.scorecard.finishedRuns).to.eql(20);
+              pm.expect(agent.scorecard.successRate).to.eql(1);
+          });
+      }

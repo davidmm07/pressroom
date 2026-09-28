@@ -1,0 +1,41 @@
+$kind: http-request
+name: 6.4 A first draft with mistakes is rejected
+description: Every invalid field comes back in one response, with a path into the input and a stable code.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 4000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: CreateAgentInput!) { createAgent(input: $input) { agent { id } userErrors { field code message } } }",
+      "variables": {
+        "input": {
+          "slug": "Address Checker",
+          "name": "Address Checker",
+          "department": "OPERATIONS",
+          "owner": "ops-lead@example.com",
+          "instructions": "Compare the shipping address with the customer's history.",
+          "model": "anthropic/claude-sonnet-5",
+          "tools": ["lookup_order", "launch_rockets"],
+          "maxSteps": 99,
+          "maxCost": "0.25",
+          "minutesSavedPerRun": 5
+        }
+      }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.createAgent;
+      const errors = {};
+      payload.userErrors.forEach(e => { errors[e.field.join('.')] = e.code; });
+      pm.test('Nothing was created', function () {
+          pm.expect(payload.agent).to.be.null;
+      });
+      pm.test('All three mistakes reported together', function () {
+          pm.expect(errors['input.slug']).to.eql('INVALID_FORMAT');
+          pm.expect(errors['input.tools.1']).to.eql('INVALID_VALUE');
+          pm.expect(errors['input.maxSteps']).to.eql('OUT_OF_RANGE');
+      });

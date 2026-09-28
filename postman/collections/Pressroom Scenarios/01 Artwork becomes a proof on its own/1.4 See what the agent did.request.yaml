@@ -1,0 +1,42 @@
+$kind: http-request
+name: 1.4 See what the agent did
+description: Reads the run's trace, the audit log of every model turn and tool call.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 4000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { output cost usage { inputTokens outputTokens } steps { kind toolName summary detail } } }",
+      "variables": { "id": "{{s1RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const calls = run.steps.filter(s => s.kind === 'TOOL_CALL');
+      const tools = calls.map(s => s.toolName);
+
+      pm.test('Inspected, upscaled, removed the background, sent the proof', function () {
+          pm.expect(tools).to.eql(['inspect_artwork', 'upscale_image', 'remove_background', 'send_proof']);
+      });
+
+      const inspection = JSON.parse(calls[0].detail.result);
+      pm.test('The inspection found 200 DPI and asked for a 2x upscale', function () {
+          pm.expect(inspection.effectiveDpi).to.eql(200);
+          pm.expect(inspection.upscaleFactor).to.eql(2);
+          pm.expect(inspection.notNeeded).to.include('vectorize_artwork');
+      });
+
+      pm.test('No human was involved', function () {
+          pm.expect(run.steps.map(s => s.kind)).to.not.include('APPROVAL_REQUESTED');
+      });
+
+      pm.test('Cost stayed inside the $1 budget', function () {
+          pm.expect(Number(run.cost)).to.be.below(1);
+      });
+
+      console.log('Outcome: proof for SM-1048 sent in ' + Number(pm.collectionVariables.get('s1Seconds')).toFixed(1) +
+          ' s for $' + Number(run.cost).toFixed(4) + '. A prepress technician would spend about 6 minutes.');

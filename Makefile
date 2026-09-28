@@ -43,7 +43,10 @@ dev-web: ## Run the dashboard on :5173
 
 ## ---- quality
 
-.PHONY: generate check-generated fmt lint test test-integration test-web ci
+.PHONY: generate check-generated fmt lint test test-integration test-web scenarios ci
+scenarios: ## Postman business scenarios against a running stack (S="02 ..." runs one)
+	./scripts/scenarios.sh $(if $(S),"$(S)")
+
 generate: ## Regenerate GraphQL server and client code
 	cd internal/adapter/graphql && go tool gqlgen generate --config gqlgen.yml
 	cd web && pnpm codegen

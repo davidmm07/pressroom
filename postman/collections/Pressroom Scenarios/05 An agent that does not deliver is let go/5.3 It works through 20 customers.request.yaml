@@ -1,0 +1,39 @@
+$kind: http-request
+name: 5.3 It works through 20 customers
+description: Starts 20 runs, one per customer due for a reorder. This step repeats itself in the Collection Runner.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 3000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: StartRunInput!) { startRun(input: $input) { run { id } userErrors { code message } } }",
+      "variables": {
+        "input": {
+          "agentId": "{{s5AgentId}}",
+          "idempotencyKey": "{{s5Key}}",
+          "input": { "customerEmail": "priya.nair@example.com", "percentOff": 10 }
+        }
+      }
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      const ids = JSON.parse(pm.collectionVariables.get('s5RunIds'));
+      pm.collectionVariables.set('s5Key', 'reorder-' + Date.now() + '-' + ids.length);
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const ids = JSON.parse(pm.collectionVariables.get('s5RunIds'));
+      ids.push(pm.response.json().data.startRun.run.id);
+      pm.collectionVariables.set('s5RunIds', JSON.stringify(ids));
+      if (ids.length < 20) {
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.test('20 runs started', function () {
+              pm.expect(ids).to.have.lengthOf(20);
+          });
+          pm.collectionVariables.set('s5Reviewed', '0');
+      }

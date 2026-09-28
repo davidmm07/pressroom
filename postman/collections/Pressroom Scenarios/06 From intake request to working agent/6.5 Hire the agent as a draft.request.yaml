@@ -1,0 +1,40 @@
+$kind: http-request
+name: 6.5 Hire the agent as a draft
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 5000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: CreateAgentInput!) { createAgent(input: $input) { agent { id slug status version } userErrors { field code message } } }",
+      "variables": {
+        "input": {
+          "slug": "{{s6Slug}}",
+          "name": "Address Checker",
+          "department": "OPERATIONS",
+          "owner": "ops-lead@example.com",
+          "instructions": "Look up the order and flag anything unusual about the shipping address to the operations channel.",
+          "model": "anthropic/claude-sonnet-5",
+          "tools": ["lookup_order", "notify_team"],
+          "maxSteps": 6,
+          "maxCost": "0.25",
+          "minutesSavedPerRun": 5
+        }
+      }
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.collectionVariables.set('s6Slug', 'address-check-' + Date.now().toString(36));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.createAgent;
+      pm.test('Hired as a draft, version 1', function () {
+          pm.expect(payload.userErrors, JSON.stringify(payload.userErrors)).to.be.empty;
+          pm.expect(payload.agent.status).to.eql('DRAFT');
+          pm.expect(payload.agent.version).to.eql(1);
+      });
+      pm.collectionVariables.set('s6AgentId', payload.agent.id);

@@ -1,0 +1,20 @@
+$kind: http-request
+name: 4.2 Put it on duty
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 2000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($id: ID!) { activateAgent(id: $id) { agent { status } userErrors { code message } } }",
+      "variables": { "id": "{{s4AgentId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.activateAgent;
+      pm.test('Agent is active', function () {
+          pm.expect(payload.agent.status).to.eql('ACTIVE');
+      });

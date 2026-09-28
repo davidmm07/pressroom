@@ -24,3 +24,6 @@ web/coverage/
 .idea/
 .vscode/
 .DS_Store
+
+# Postman CLI
+postman-cli-reports/

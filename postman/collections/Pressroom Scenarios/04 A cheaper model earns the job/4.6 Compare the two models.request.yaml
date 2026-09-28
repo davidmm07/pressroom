@@ -1,0 +1,33 @@
+$kind: http-request
+name: 4.6 Compare the two models
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 6000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { agent(id: $id) { activeExperiment { championScorecard { finishedRuns successRate costPerRun netValue } challengerScorecard { finishedRuns successRate costPerRun netValue } } } }",
+      "variables": { "id": "{{s4AgentId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const exp = pm.response.json().data.agent.activeExperiment;
+      const a = exp.championScorecard;
+      const b = exp.challengerScorecard;
+      pm.test('Both arms have enough finished runs to judge', function () {
+          pm.expect(a.finishedRuns).to.be.at.least(10);
+          pm.expect(b.finishedRuns).to.be.at.least(10);
+      });
+      pm.test('Same success rate', function () {
+          pm.expect(b.successRate).to.be.at.least(a.successRate - 0.02);
+      });
+      pm.test('The challenger costs less per ticket', function () {
+          pm.expect(Number(b.costPerRun)).to.be.below(Number(a.costPerRun));
+      });
+      pm.collectionVariables.set('s4ChampionCost', a.costPerRun);
+      pm.collectionVariables.set('s4ChallengerCost', b.costPerRun);
+      console.log('Opus 5: ' + a.finishedRuns + ' runs, $' + Number(a.costPerRun).toFixed(4) + ' per ticket');
+      console.log('Grok 4 Fast: ' + b.finishedRuns + ' runs, $' + Number(b.costPerRun).toFixed(4) + ' per ticket');

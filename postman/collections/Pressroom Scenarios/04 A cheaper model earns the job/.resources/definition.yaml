@@ -1,0 +1,19 @@
+$kind: collection
+name: 04 A cheaper model earns the job
+order: 4000
+description: |-
+  **Why it matters.** New models ship every few weeks, each claiming to be
+  better or cheaper. Pressroom adopts one only after it proves itself on your
+  own work: an experiment sends a share of an agent's runs to the challenger,
+  both arms are scored the same way, and the challenger takes over only if it
+  matches quality and nets more value per run.
+
+  **What this scenario proves.**
+  1. A new ticket agent starts on Claude Opus 5.
+  2. Half of its runs go to Grok 4 Fast.
+  3. After enough tickets on each arm, the scorecards show the same success
+     rate at a fraction of the cost.
+  4. Concluding the experiment promotes Grok 4 Fast, and the agent keeps
+     running on it.
+
+  Uses a fresh agent every time, so it can run again and again.

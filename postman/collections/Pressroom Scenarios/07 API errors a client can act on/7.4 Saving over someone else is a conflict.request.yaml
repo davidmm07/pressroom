@@ -1,0 +1,22 @@
+$kind: http-request
+name: 7.4 Saving over someone else is a conflict
+description: Optimistic locking. A stale expectedVersion means someone saved first, so nothing is overwritten.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 4000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: UpdateAgentInput!) { updateAgent(input: $input) { agent { id } userErrors { code message } } }",
+      "variables": { "input": { "id": "{{s7AgentId}}", "expectedVersion": {{s7StaleVersion}}, "name": "Renamed by mistake" } }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.updateAgent;
+      pm.test('CONFLICT, and the agent is untouched', function () {
+          pm.expect(payload.agent).to.be.null;
+          pm.expect(payload.userErrors[0].code).to.eql('CONFLICT');
+      });
