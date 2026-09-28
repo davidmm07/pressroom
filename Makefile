@@ -22,7 +22,7 @@ db: ## Start only Postgres
 	docker compose up -d postgres
 
 .PHONY: migrate seed dev-api dev-worker dev-web
-migrate: ## Apply migrations to $$DATABASE_URL
+migrate: ## Apply migrations to DATABASE_URL
 	go run ./cmd/pressroomctl migrate
 
 seed: migrate ## Load the demo crew, orders and history
