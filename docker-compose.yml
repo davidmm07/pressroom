@@ -1,4 +1,4 @@
-# Local stack: `docker compose up --build`, then open http://localhost:3000
+# Local stack: `make up`, then open http://localhost:3000
 # (set WEB_PORT to use another port).
 # Without API keys every agent runs on the offline sandbox model.
 name: pressroom

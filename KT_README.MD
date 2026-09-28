@@ -100,37 +100,31 @@ installs are far slower across that boundary.
 
 ### Path A: everything in Docker (fastest, no Go or Node needed)
 
-1. **Clone and enter the repository.**
+1. **Start the stack** from the repository root. The first build downloads Go
+   modules and npm packages, so give it a few minutes.
 
    ```bash
-   git clone <repo-url> pressroom && cd pressroom
-   ```
-
-2. **Start the stack.** The first build downloads Go modules and npm packages,
-   so give it a few minutes.
-
-   ```bash
-   docker compose up --build
+   make up
    ```
 
    Compose starts Postgres, runs the `migrations` and `seed` one-shot
    containers, then starts `api`, `worker` and `web`. If port 3000 is taken:
 
    ```bash
-   WEB_PORT=3300 docker compose up --build
+   WEB_PORT=3300 make up
    ```
 
-3. **Open the dashboard** at <http://localhost:3000> (or your `WEB_PORT`).
+2. **Open the dashboard** at <http://localhost:3000> (or your `WEB_PORT`).
    The API answers at <http://localhost:8080/graphql>.
 
-4. **Check the worker processed the seeded events.** The Approvals link in the
+3. **Check the worker processed the seeded events.** The Approvals link in the
    sidebar should show **2**.
 
-5. **Stop, or reset everything.**
+4. **Stop, or reset everything.**
 
    ```bash
    docker compose down        # stop, keep data
-   docker compose down -v     # stop and delete the database
+   make down                  # stop and delete the database
    ```
 
 ### Path B: local development (hot reload)
@@ -422,7 +416,7 @@ Dashboard build variables: `VITE_GRAPHQL_URL` (default `/graphql`),
 
 | Symptom | Cause and fix |
 | --- | --- |
-| `bind: address already in use` for port 3000 | Something else uses it. Run `WEB_PORT=3300 docker compose up --build`. |
+| `bind: address already in use` for port 3000 | Something else uses it. Run `WEB_PORT=3300 make up`. |
 | Port 5432 already in use | A local Postgres is running. Stop it, or change the compose port mapping and `DATABASE_URL` to match. |
 | Runs stay `QUEUED` | The worker is not running, or points at another database. Start `make dev-worker` and compare `DATABASE_URL`. |
 | Runs fail with `provider ... is not configured` | `PRESSROOM_MODEL_MODE=live` without that provider's key. Use `auto`, or set the key. |

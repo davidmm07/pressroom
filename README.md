@@ -42,12 +42,12 @@ flowchart LR
 
 ## Quick start
 
-Requirements: Docker. No API keys needed: without them every agent runs on a
-deterministic **sandbox model** that exercises the same loop, tools and
-approvals.
+Requirements: Docker and make. No API keys needed: without them every agent
+runs on a deterministic **sandbox model** that exercises the same loop, tools
+and approvals.
 
 ```bash
-docker compose up --build
+make up
 ```
 
 Open <http://localhost:3000> (set `WEB_PORT` if 3000 is taken). The seed loads
