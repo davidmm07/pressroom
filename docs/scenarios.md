@@ -3,8 +3,9 @@
 Pressroom answers the questions a company has to settle before it lets AI
 agents do real work: can an agent finish a job on its own, can it act without
 being trusted with money, what happens when a person says no, how do we adopt
-a new model safely, what do we do with an agent nobody finds useful, and how
-does a department get one in the first place.
+a new model safely, what do we do with an agent nobody finds useful, how
+does a department get one in the first place, and do the rules hold when an
+agent's own instructions are wrong.
 
 Each question is a scenario in the Postman collection
 [`postman/collections/Pressroom Scenarios`](../postman/collections/Pressroom%20Scenarios).
@@ -21,6 +22,8 @@ the step numbers match the request names in Postman.
 | 5 | What happens to an agent that does not deliver? | 20 runs without an error, but reviewers keep 20% of the output: probation, then retirement, then no more work. |
 | 6 | How does a department get an agent, and how do we prove it shipped? | A lead's request is scored and ranked, approved, turned into an agent, and marked shipped with that agent linked. |
 | 7 | What does a developer get when something is wrong? | Stable error codes, field paths, nulls for missing objects, and no internal details. |
+| 8 | Can an agent make the judgment call and leave a person one click? | A photo of misprinted stickers becomes a proposed reprint of exactly the 40 bad units. After one approval the agent drafts a style-checked reply and tells the factory. |
+| 9 | Do the rules hold when an agent's instructions are wrong? | Clean designs go live on their own and flagged ones are held. An agent told to publish everything is refused by the tool itself. |
 
 ## Run them
 
@@ -31,7 +34,7 @@ every agent uses the free, deterministic sandbox model.
 
 ```bash
 make up                                          # in one terminal
-make scenarios                                   # in another: all seven
+make scenarios                                   # in another: all nine
 make scenarios S="02 Refunds wait for a human"   # just one
 ```
 
@@ -173,6 +176,51 @@ flowchart LR
   F --> G["7.7 Made-up cursor:<br/>BAD_USER_INPUT"]
   G --> H["7.8 Malformed event:<br/>acknowledged, 204"]
 ```
+
+### 8. A photo settles a damage claim
+
+```mermaid
+flowchart LR
+  A["8.1 Photo: 40 stickers<br/>printed off-color"] --> B["8.2 Find the<br/>Damage Claim Assessor run"]
+  B --> C{"8.3 Asks to reprint?"}
+  C -- "working" --> C
+  C -- "AWAITING_APPROVAL" --> D["8.4 Read as a production<br/>fault; nothing reprinted yet"]
+  D --> E["8.5 Lead approves"]
+  E --> F{"8.6 Finished?"}
+  F -- "working" --> F
+  F -- "SUCCEEDED" --> G["8.7 Reprint ran, reply passed<br/>the style guide, factory told"]
+```
+
+Customers never send damaged items back; the photo is the evidence. The
+claims policy lives in `assess_damage_photo`: a clear photo gets a reprint of
+the affected units (or a refund if the customer asked for one), an unclear
+one goes to a person. A production fault is also reported to the team, so
+manufacturing hears about it the same day. Transit damage is not.
+
+### 9. A flagged design is never published
+
+```mermaid
+flowchart LR
+  A["9.1 Clean design<br/>submitted"] --> B["9.2 Find the<br/>Listing Screener run"]
+  B --> C{"9.3 Live on its own?"}
+  C -- "working" --> C
+  C -- "SUCCEEDED" --> D["9.4 Fan art of a<br/>protected character"]
+  D --> E["9.5 Find its run"]
+  E --> F{"9.6 Held, team told?"}
+  F -- "working" --> F
+  F -- "SUCCEEDED" --> G["9.7 Hire an agent told<br/>to publish everything"]
+  G --> H["9.8 Activate"]
+  H --> I["9.9 Publish the<br/>flagged design"]
+  I --> J{"9.10 Tool refused?"}
+  J -- "working" --> J
+  J -- "yes, on record" --> K["Nothing published"]
+```
+
+The screener publishes clean designs with no human involved, which is most of
+them. The rule that a flagged design never goes live is not in its
+instructions: `publish_listing` screens the design again itself and refuses.
+Steps 9.7 to 9.10 hire an agent whose instructions say to publish without
+checking, and show that the tool still says no.
 
 ## Turning a scenario into a Postman Flow
 

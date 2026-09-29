@@ -18,9 +18,10 @@ Keep these open alongside it:
 
 Pressroom runs a crew of **AI agents** for a company that prints custom
 stickers, labels, magnets, buttons, packaging and t-shirts. Each agent has a
-job (check uploaded artwork, answer support tickets, chase stalled parcels,
-nudge customers to reorder), a model (Claude, GPT, Grok or an open-weights
-model), a set of **tools** it may call, and a budget.
+job (check uploaded artwork, answer support tickets, settle damage claims from
+a photo, screen marketplace designs, move production jobs that would ship
+late, turn bad reviews into defect reports), a model (Claude, GPT, Grok or an
+open-weights model), a set of **tools** it may call, and a budget.
 
 Work arrives as **events** (for example `ticket.created`). Each event starts a
 **run**: the agent's model decides which tools to call, Pressroom executes
@@ -143,7 +144,7 @@ Use this when you are changing code. Open four terminals in the repository root.
 
    ```bash
    make db      # Postgres in Docker on :5433
-   make seed    # migrations, then 5 agents, a month of history, 5 queued events
+   make seed    # migrations, then 13 agents, a month of history, 14 queued events
    ```
 
    Running `make seed` again prints `demo data already loaded; nothing to do`.
@@ -155,13 +156,13 @@ Use this when you are changing code. Open four terminals in the repository root.
    make dev-api      # http://localhost:8080 (GraphiQL at /)
    ```
 
-3. **Terminal 3: the worker.** It picks up the 5 queued events within seconds.
+3. **Terminal 3: the worker.** It picks up the 14 queued events within seconds.
 
    ```bash
    make dev-worker   # :8081
    ```
 
-   Two runs end in `AWAITING_APPROVAL`; the others succeed. Logs are readable
+   Six runs end in `AWAITING_APPROVAL`; the others succeed. Logs are readable
    text locally (`LOG_FORMAT=text`) and JSON in production.
 
 4. **Terminal 4: the dashboard.**
@@ -194,10 +195,10 @@ of these before starting the API and worker (or in `.env` for Docker):
 
 | Variable | Provider | Agents in the demo that use it |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | Claude (official Go SDK) | Proof Checker, Support Triage |
-| `OPENAI_API_KEY` | OpenAI | Shipping Watch |
-| `XAI_API_KEY` | Grok | Support Triage challenger, Payout Reconciler |
-| `OPEN_SOURCE_BASE_URL` | Any OpenAI-compatible server (Ollama, vLLM) | Reorder Nudger |
+| `ANTHROPIC_API_KEY` | Claude (official Go SDK) | Proof Checker, Support Triage, Damage Claim Assessor, Proof Revision Assistant, Production Watch |
+| `OPENAI_API_KEY` | OpenAI | Shipping Watch, Store Launch Coach |
+| `XAI_API_KEY` | Grok | Support Triage challenger, Payout Reconciler, Listing Screener, Deal Planner |
+| `OPEN_SOURCE_BASE_URL` | Any OpenAI-compatible server (Ollama, vLLM) | Reorder Nudger, Review Defect Analyst, Giveaway Screener |
 
 For Ollama on your machine: `OPEN_SOURCE_BASE_URL=http://localhost:11434/v1`
 locally, or `http://host.docker.internal:11434/v1` from Docker. Leave it
@@ -224,13 +225,15 @@ feature you will meet in the code.
 | 7 | **Crew** | **Evaluate crew** | Reorder Nudger goes on probation, with the reasons shown. Evaluate again and it retires. |
 | 8 | **Intake** | Submit a request, approve it, ship it with an agent | The scored backlog department leads use. |
 | 9 | **Hire an agent** | Create one, activate it on its page, then **Run it now** | Form validation (client and server), the draft/active lifecycle, a manual run. |
+| 10 | **Approvals** | Look at the Production Watch `reroute_job` | Job J-7004 would finish two days after its ship-by date on PRESS-1; PRESS-2 finishes it tomorrow. The tool did the arithmetic, the lead decides. |
+| 11 | **Agents > Listing Screener** | Open both runs | One design went live with no human involved; the one naming a protected character was held and the team told. |
 
 The same stories, automated: the Postman scenarios run each one through the
 API with assertions and print its business outcome. Start here if you want to
 understand what Pressroom is for before reading code.
 
 ```bash
-make scenarios                                   # all seven, against the running stack
+make scenarios                                   # all nine, against the running stack
 make scenarios S="04 A cheaper model earns the job"
 ```
 
@@ -254,10 +257,15 @@ With Docker, run the CLI container instead:
 docker compose run --rm seed dispatch ticket.created '{"ticketId":"T-9001","orderId":"ORD-1046"}'
 ```
 
-Useful seeded data: orders `ORD-1042` to `ORD-1048` (ORD-1042 has a stalled
-parcel), customers `ana.lopez@example.com` and `priya.nair@example.com`.
-Event types in use: `artwork.uploaded`, `ticket.created`, `shipment.stalled`,
-`customer.reorder_due`.
+Useful seeded data: orders `ORD-1042` to `ORD-1050` (ORD-1042 has a stalled
+parcel, ORD-1050 is the misprinted one), customers `ana.lopez@example.com` and
+`priya.nair@example.com`, stores `S-201` (no sales) and `S-202` (selling),
+listings `L-3501` (flagged) and `L-3502` (clean), production job `J-7004`
+(late on PRESS-1) and giveaway `G-12`. Event types in use:
+`artwork.uploaded`, `ticket.created`, `shipment.stalled`,
+`customer.reorder_due`, `claim.submitted`, `proof.changes_requested`,
+`listing.submitted`, `store.no_sales`, `production.job_at_risk`,
+`reviews.weekly_digest`, `capacity.weekly_forecast`, `giveaway.closed`.
 
 ---
 
@@ -285,7 +293,7 @@ curl -s localhost:8080/graphql -H 'Content-Type: application/json' \
 | `make test` | All Go unit tests with the race detector; database tests are skipped | Go |
 | `make test-integration` | Everything above plus repositories, the queue and GraphQL end to end on Postgres (creates `pressroom_test` in the Docker database) | Go, Docker |
 | `make test-web` | Dashboard typecheck and Vitest | Node, pnpm |
-| `make scenarios` | The seven Postman business scenarios against the running stack, failing if any step is skipped | Node, a running stack (`make up`) |
+| `make scenarios` | The nine Postman business scenarios against the running stack, failing if any step is skipped | Node, a running stack (`make up`) |
 | `make lint` | `go vet` and a `gofmt` check | Go |
 | `make check-generated` | Regenerates GraphQL code and fails if anything changed | Go, pnpm |
 | `make ci` | lint, integration tests and web checks, like CI | all of the above |
@@ -362,10 +370,18 @@ applies; [docs/architecture.md](docs/architecture.md) collects them in one table
 ### Add a tool
 
 1. Write it in `internal/adapter/tools/` with `Func(domain.ToolSpec{...}, handler)`. Give it a snake_case name, a clear description (the model reads it), and a strict JSON Schema via `Schema(...)`.
-2. Set `RequiresApproval: true` if it moves money or reaches a customer.
-3. For side effects, record them with `idempotencyKey(ctx, "<action>")` so a retried run never acts twice.
-4. Register it in `Standard` (`internal/adapter/tools/standard.go`) and update the catalog count in `tools_test.go`.
-5. Give it to an agent in the dashboard or with `updateAgent`.
+2. Depend on the narrowest system it needs (`Commerce`, `Marketplace`, `Factory`, `Reviews`, `Giveaways`...). A new system gets its own small interface, a field in `Dependencies`, and a line in `bootstrap.Build`.
+3. Set `RequiresApproval: true` if it moves money, reaches a customer, changes public prices or reshuffles production.
+4. Rules that must hold whatever the model does go in the handler, not the agent's instructions (see `publish_listing` and `propose_deal`). Keep the rule set a pure, exported function so it is easy to test, as `Inspect`, `AssessClaim` and `PlanJob` are.
+5. For side effects, record them with `idempotencyKey(ctx, "<action>")` so a retried run never acts twice.
+6. Register it in `Standard` (`internal/adapter/tools/standard.go`) and update the catalog count and approval list in `tools_test.go`.
+7. Give it to an agent in the dashboard or with `updateAgent`.
+
+### Add a department
+
+1. Add the constant and its place in `Departments` (`internal/domain/department.go`).
+2. Add it to the `Department` enum in `schema.graphqls` and to `departments` in `web/src/lib/validation.ts`.
+3. Run `make generate`.
 
 ### Add a model provider
 
@@ -386,7 +402,7 @@ If it speaks the OpenAI Chat Completions protocol, skip step 1 and reuse `NewOpe
 
 ### Add a database migration
 
-1. Create `internal/adapter/postgres/migrations/00003_<what>.sql` with `-- +goose Up` and `-- +goose Down` sections.
+1. Create `internal/adapter/postgres/migrations/00004_<what>.sql` (the next free number) with `-- +goose Up` and `-- +goose Down` sections.
 2. `make migrate` applies it locally. Docker runs it in the `migrations` service; production runs it as a Cloud Run job before rollout.
 3. Migrations run while the previous release still serves traffic, so make them backward compatible: add first, remove in a later release.
 

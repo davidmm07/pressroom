@@ -6,9 +6,11 @@ Pressroom is the platform an AI operations team would use at a company that
 prints custom stickers, labels, magnets, buttons, packaging and t-shirts, with
 free online proofs, image tools (background removal, upscaling, vectorization)
 and free worldwide shipping. It runs autonomous agents that do real work
-(pre-flighting artwork, triaging support tickets, chasing stalled parcels,
-nudging reorders), connects them to internal and third-party tools, measures
-whether each one is worth its cost, and removes the ones that do not deliver.
+(pre-flighting artwork, settling damage claims from a photo, screening
+marketplace designs, rescuing production jobs that would ship late, turning
+reviews into defect reports), connects them to internal and third-party
+tools, measures whether each one is worth its cost, and removes the ones that
+do not deliver.
 
 Built with **Go, TypeScript, GraphQL, PostgreSQL and Google Cloud**, and model
 agnostic: **Claude, OpenAI, Grok and open-weights models** plug in behind one
@@ -20,7 +22,7 @@ flowchart LR
   SF[Storefront] -- artwork.uploaded / ticket.created --> PS[(Pub/Sub)]
   PS -- push, OIDC --> W[Worker]
   W -- agent loop --> M{{Claude, GPT, Grok, open weights}}
-  W -- tool calls --> T[Order DB, image studio, carrier, helpdesk, payments, Slack]
+  W -- tool calls --> T[Orders, image studio, carrier, helpdesk, payments,<br/>marketplace, factory floor, reviews, Slack]
   W <--> DB[(PostgreSQL)]
   UI[Dashboard<br/>React + TypeScript] -- GraphQL --> API[API]
   API <--> DB
@@ -34,7 +36,7 @@ flowchart LR
 | Build agents that run on their own and do meaningful work | [The executor](internal/app/executor.go) runs a model-and-tools loop with budgets, checkpoints every step, resumes after crashes and pauses for a human before refunds or customer emails. Runs start from Pub/Sub events, the API or the CLI. |
 | Strong with Claude, OpenAI, Grok and open source | [Model adapters](internal/adapter/llm): Claude through the official Anthropic Go SDK (adaptive thinking, prompt caching, server-side refusal fallbacks), and one Chat Completions adapter for OpenAI, xAI Grok and self-hosted vLLM/Ollama. |
 | Identify where agents can help; work with department leads | [Intake](web/src/pages/IntakePage.tsx): leads submit repetitive work, scored by hours per week x feasibility (data sensitivity and cost of mistakes). Shipping an opportunity links it to the agent that now does it. |
-| Connect agents to third-party and internal tools | A [tool registry](internal/adapter/tools/registry.go) with JSON Schema validation, per-agent allow-lists, idempotent side effects and an approval flag. 13 print-shop tools ship with it. |
+| Connect agents to third-party and internal tools | A [tool registry](internal/adapter/tools/registry.go) with JSON Schema validation, per-agent allow-lists, idempotent side effects and an approval flag. 27 print-shop tools ship with it, from order lookups to the factory floor ([the crew and its tools](docs/agents.md)). |
 | Measure results and remove agents that don't deliver | [Scorecards](internal/domain/scorecard.go) (success, human acceptance, cost, hours saved, net value) and a [retirement policy](internal/domain/policy.go): miss targets once, probation; twice, retired. Evaluated daily by Cloud Scheduler. |
 | Test new tools and models as they ship and adopt what works | [Experiments](internal/domain/experiment.go) route a share of an agent's runs to a challenger model and promote it only if it matches quality and nets more value per run. |
 | Advise others on AI capabilities | The dashboard shows every agent's job description, tools, cost and results side by side, and the models catalog lists prices per provider. |
@@ -51,11 +53,13 @@ make up
 ```
 
 Open <http://localhost:3300> (set `WEB_PORT` to change it). The seed loads
-five agents, a month of history and five fresh storefront events. Within a few
-seconds the worker has processed them: two runs are waiting in **Approvals**
-(a refund and a marketing email), a champion/challenger experiment is ready to
-conclude on **Support Triage**, and **Evaluate crew** puts **Reorder Nudger**
-on probation because reviewers throw most of its emails away.
+thirteen agents across seven departments (a founding crew of five with a month
+of history, and eight new hires) and fourteen fresh events. Within a few
+seconds the worker has processed them: six runs are waiting in **Approvals**
+(a refund, a reprint, two emails, a production reroute and a deal), a
+champion/challenger experiment is ready to conclude on **Support Triage**, and
+**Evaluate crew** puts **Reorder Nudger** on probation because reviewers throw
+most of its emails away.
 
 To use real models, export any of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
 `XAI_API_KEY` or `OPEN_SOURCE_BASE_URL` before starting. In the default `auto`
@@ -79,7 +83,7 @@ go run ./cmd/pressroomctl dispatch ticket.created '{"ticketId":"T-9001","orderId
 
 ## See it work: business scenarios
 
-Seven Postman scenarios walk through what Pressroom is for, with real API
+Nine Postman scenarios walk through what Pressroom is for, with real API
 calls and assertions, and print the business outcome of each one:
 
 | Scenario | Outcome of a run on the sandbox model |
@@ -91,6 +95,8 @@ calls and assertions, and print the business outcome of each one:
 | An agent that does not deliver is let go | 20 error-free runs, 20% of the output kept: probation, then retirement |
 | From intake request to working agent | A lead's request is scored, approved, becomes an agent and is marked shipped |
 | API errors a client can act on | Stable codes and field paths, nulls for missing objects, nothing internal leaked |
+| A photo settles a damage claim | The agent reads the photo as a misprint, proposes reprinting exactly 40 stickers, and after one approval drafts the reply and tells the factory |
+| A flagged design is never published | Clean designs go live on their own; fan art of a protected character is held, even by an agent told to publish everything |
 
 ```bash
 make up          # in one terminal
@@ -137,7 +143,7 @@ pattern** to the code that applies it. The short version:
 | State machine | [agent](internal/domain/agent.go#L23) and [run](internal/domain/run.go#L24) transition tables |
 | Memento | [provider state](internal/domain/message.go#L41) carried opaquely in the transcript |
 | Observer | [domain events](internal/domain/events.go#L7) and the [event bus](internal/adapter/events/bus.go#L27) |
-| Registry and Factory | [tool registry](internal/adapter/tools/registry.go#L70), [`Standard`](internal/adapter/tools/standard.go#L12), [`buildModels`](internal/bootstrap/bootstrap.go#L106) |
+| Registry and Factory | [tool registry](internal/adapter/tools/registry.go#L71), [`Standard`](internal/adapter/tools/standard.go#L19), [`buildModels`](internal/bootstrap/bootstrap.go#L108) |
 | Chain of Responsibility | [HTTP middleware chain](internal/adapter/httpserver/middleware.go#L20) |
 | Notification | [`Validator`](internal/domain/validation.go#L14) collects every field error in one pass |
 | Data Loader | [per-request batching](internal/adapter/graphql/loaders.go#L17) against N+1 queries |

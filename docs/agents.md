@@ -9,8 +9,23 @@
 | Shipping Watch | Operations | GPT-5 mini | `shipment.stalled` | lookup_order, track_shipment, draft_reply, notify_team | 5 min per stalled parcel |
 | Reorder Nudger | Marketing | Qwen3 32B, self-hosted | `customer.reorder_due` | lookup_customer, create_promo_code, queue_email* | 4 min per customer |
 | Payout Reconciler | Finance | Grok 4 | none yet (draft) | lookup_order, notify_team | 20 min per payout |
+| Damage Claim Assessor | Customer experience | Claude Opus 5 | `claim.submitted` | assess_damage_photo, order_reprint*, issue_refund*, check_reply_style, draft_reply, notify_team | 8 min per claim photo |
+| Proof Revision Assistant | Prepress | Claude Sonnet 5 | `proof.changes_requested` | apply_proof_revision, send_proof | 10 min per revised proof |
+| Listing Screener | Marketplace | Grok 4 Fast | `listing.submitted` | screen_listing, publish_listing, notify_team | 3 min per new design |
+| Store Launch Coach | Marketplace | GPT-5 mini | `store.no_sales` | audit_store, queue_email* | 15 min per struggling store |
+| Production Watch | Manufacturing | Claude Haiku 4.5 | `production.job_at_risk` | production_status, reroute_job*, notify_team | 12 min per late job |
+| Review Defect Analyst | Manufacturing | Llama 3.3 70B, self-hosted | `reviews.weekly_digest` | fetch_reviews, file_defect_report, notify_team | an hour of reading reviews a week |
+| Deal Planner | Marketing | Grok 4 | `capacity.weekly_forecast` | capacity_forecast, propose_deal* | 45 min of planning a week |
+| Giveaway Screener | Marketing | Qwen3 32B, self-hosted | `giveaway.closed` | screen_giveaway_entries, notify_team | 30 min per giveaway |
 
 \* needs human approval before it runs.
+
+The first five are the founding crew with a month of history. The other
+eight are new hires, each with one demo event waiting for it: four finish on
+their own and four stop at an approval. Models are matched to the job: the
+strongest model where a photo decides money, small fast models for high-volume
+screening, and self-hosted open weights where the input is customers' personal
+data (reviews, giveaway entries).
 
 Each agent's instructions are its job description, written by the owning
 lead. Pressroom adds shared operating rules to every system prompt: use tools
@@ -31,9 +46,31 @@ a summary a teammate can act on.
 | `create_promo_code` | Storefront | At most 20% off, enforced by the schema so no prompt can raise it. |
 | `queue_email` | Email service | **Approval required**. |
 | `notify_team` | Slack incoming webhook | Degrades to "not delivered" when no webhook is configured. |
+| `assess_damage_photo` | Vision model and claims policy | Proposes a remedy for at most the ordered quantity; unclear photos, and refunds above the agent limit, go to a person. |
+| `order_reprint` | Factory | **Approval required**; never more units than were ordered. |
+| `check_reply_style` | Support style guide (pure logic) | Flags apologies and negative phrasing, replies over 120 words and replies that skip the customer's name. |
+| `apply_proof_revision` | Image studio | Only size, cut shape, border, rotation and background; shapes and sizes each product can take; text and color changes are queued for a designer. |
+| `audit_store` | Marketplace | Read only. |
+| `screen_listing` | Marketplace, protected marks register | Read only; flags protected brands and claims of a license. |
+| `publish_listing` | Marketplace | Screens again itself and refuses anything flagged, whatever the agent was told. |
+| `production_status`, `capacity_forecast` | Factory floor | Read only. |
+| `reroute_job` | Factory floor | **Approval required**; only to another station that prints the product. |
+| `propose_deal` | Storefront deals | **Approval required**; up to 7 days; refused below a 20% gross margin. |
+| `fetch_reviews` | Review feed | Read only. |
+| `file_defect_report` | Quality tickets | Routed to the team that owns the cause. |
+| `screen_giveaway_entries` | Giveaways | Returns masked emails only, so the result is safe to post in chat. |
 
 Every side-effecting tool derives an idempotency key from the run and call ID,
 so a retried run never refunds twice.
+
+A rule that must hold no matter what the model does belongs in the tool, not
+the prompt: `publish_listing` is the clearest case, and scenario 09 hires an
+agent told to publish everything to prove it.
+
+The marketplace, factory floor, review feed and giveaways are small demo
+tables (migration 00003) behind their own ports, `tools.Marketplace`,
+`tools.Factory`, `tools.Reviews` and `tools.Giveaways`. Swapping one for the
+real service is a new adapter; no tool changes.
 
 ## Budgets
 
