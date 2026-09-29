@@ -1,0 +1,38 @@
+$kind: http-request
+name: 8.7 Reply drafted and the factory told
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 7000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { cost steps { index kind toolName detail } } }",
+      "variables": { "id": "{{s8RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const call = name => run.steps.find(s => s.kind === 'TOOL_CALL' && s.toolName === name);
+      const granted = run.steps.find(s => s.kind === 'APPROVAL_GRANTED');
+      const reprint = call('order_reprint');
+      const style = call('check_reply_style');
+      const draft = call('draft_reply');
+      pm.test('The reprint ran only after the approval', function () {
+          pm.expect(reprint.index).to.be.above(granted.index);
+          pm.expect(JSON.parse(reprint.detail.result).status).to.eql('QUEUED');
+      });
+      pm.test('The reply passed the style guide before it was drafted', function () {
+          pm.expect(JSON.parse(style.detail.result).styleOk).to.be.true;
+          pm.expect(draft.index).to.be.above(style.index);
+      });
+      pm.test('Manufacturing was told about the misprint', function () {
+          pm.expect(call('notify_team'), 'notify_team call').to.be.an('object');
+      });
+      pm.test('No refund was proposed on top of the reprint', function () {
+          pm.expect(call('issue_refund')).to.be.undefined;
+      });
+      console.log('Outcome: photo assessed, 40 stickers reprinted after one click from ' + granted.detail.approver +
+          ', reply drafted and the factory told. Model cost $' + Number(run.cost).toFixed(4) + '.');

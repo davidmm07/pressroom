@@ -1,0 +1,39 @@
+$kind: http-request
+name: 9.6 It is held and the team is told
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 6000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { status failureReason steps { kind toolName detail } } }",
+      "variables": { "id": "{{s9FlaggedRunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const polls = Number(pm.collectionVariables.get('polls') || 0);
+      if (['QUEUED', 'RUNNING'].includes(run.status) && polls < Number(pm.environment.get('maxPolls'))) {
+          pm.collectionVariables.set('polls', String(polls + 1));
+          setTimeout(function () {}, Number(pm.environment.get('pollMs')));
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.collectionVariables.set('polls', '0');
+          const call = name => run.steps.find(s => s.kind === 'TOOL_CALL' && s.toolName === name);
+          const screening = JSON.parse(call('screen_listing').detail.result);
+          pm.test('The run finished', function () {
+              pm.expect(run.status, run.failureReason).to.eql('SUCCEEDED');
+          });
+          pm.test('Flagged for the protected mark and the claim of being official', function () {
+              pm.expect(screening.verdict).to.eql('NEEDS_REVIEW');
+              pm.expect(screening.reasons.join(' ')).to.include('Starfield Studios');
+              pm.expect(screening.reasons.join(' ')).to.include('official');
+          });
+          pm.test('Not published; trust and safety was told instead', function () {
+              pm.expect(call('publish_listing')).to.be.undefined;
+              pm.expect(call('notify_team'), 'notify_team call').to.be.an('object');
+          });
+      }

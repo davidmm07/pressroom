@@ -1,0 +1,37 @@
+$kind: http-request
+name: 8.1 Customer sends a photo of misprinted stickers
+method: POST
+url: "{{workerUrl}}/events/pubsub"
+order: 1000
+body:
+  type: json
+  content: |-
+    {
+      "message": {
+        "messageId": "{{s8MessageId}}",
+        "data": "{{s8EventData}}",
+        "attributes": { "eventType": "claim.submitted" }
+      },
+      "subscription": "projects/local/subscriptions/pressroom-worker-push"
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      const claim = {
+          ticketId: 'T-' + Date.now(),
+          orderId: 'ORD-1050',
+          photoUrl: 'https://cdn.example.com/claims/' + Date.now() + '/misprint-colors.jpg',
+          claimedUnits: 40,
+          preferredRemedy: 'REPRINT',
+          comment: 'About forty of the stickers came out with the colors shifted.'
+      };
+      pm.collectionVariables.set('s8MessageId', 'postman-claim-' + Date.now());
+      pm.collectionVariables.set('s8EventData', btoa(JSON.stringify(claim)));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Worker accepted the claim', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.collectionVariables.set('s8RunIds', JSON.stringify(pm.response.json().runs));

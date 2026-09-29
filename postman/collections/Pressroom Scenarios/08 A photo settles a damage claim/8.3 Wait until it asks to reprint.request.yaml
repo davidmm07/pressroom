@@ -1,0 +1,34 @@
+$kind: http-request
+name: 8.3 Wait until it asks to reprint
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 3000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { status failureReason pendingToolCall { arguments tool { name requiresApproval } } } }",
+      "variables": { "id": "{{s8RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const polls = Number(pm.collectionVariables.get('polls') || 0);
+      if (['QUEUED', 'RUNNING'].includes(run.status) && polls < Number(pm.environment.get('maxPolls'))) {
+          pm.collectionVariables.set('polls', String(polls + 1));
+          setTimeout(function () {}, Number(pm.environment.get('pollMs')));
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.collectionVariables.set('polls', '0');
+          pm.test('The run paused for a human', function () {
+              pm.expect(run.status, run.failureReason).to.eql('AWAITING_APPROVAL');
+          });
+          pm.test('It wants to reprint the 40 misprinted units of ORD-1050', function () {
+              pm.expect(run.pendingToolCall.tool.name).to.eql('order_reprint');
+              pm.expect(run.pendingToolCall.tool.requiresApproval).to.be.true;
+              pm.expect(run.pendingToolCall.arguments.orderId).to.eql('ORD-1050');
+              pm.expect(run.pendingToolCall.arguments.reprintUnits).to.eql(40);
+          });
+      }

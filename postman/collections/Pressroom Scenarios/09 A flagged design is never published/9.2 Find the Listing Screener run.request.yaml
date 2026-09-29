@@ -1,0 +1,22 @@
+$kind: http-request
+name: 9.2 Find the Listing Screener run
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 2000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($slug: String!) { agent(slug: $slug) { runs(first: 20) { edges { node { id } } } } }",
+      "variables": { "slug": "listing-screener" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const started = JSON.parse(pm.collectionVariables.get('s9RunIds') || '[]');
+      const mine = pm.response.json().data.agent.runs.edges.map(e => e.node.id).find(id => started.includes(id));
+      pm.test('The Listing Screener picked up the design', function () {
+          pm.expect(mine, 'run id').to.be.a('string');
+      });
+      pm.collectionVariables.set('s9CleanRunId', mine);

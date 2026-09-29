@@ -1,0 +1,29 @@
+$kind: http-request
+name: 9.1 Seller submits a clean design
+method: POST
+url: "{{workerUrl}}/events/pubsub"
+order: 1000
+body:
+  type: json
+  content: |-
+    {
+      "message": {
+        "messageId": "{{s9MessageId}}",
+        "data": "{{s9EventData}}",
+        "attributes": { "eventType": "listing.submitted" }
+      },
+      "subscription": "projects/local/subscriptions/pressroom-worker-push"
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.collectionVariables.set('s9MessageId', 'postman-listing-clean-' + Date.now());
+      pm.collectionVariables.set('s9EventData', btoa(JSON.stringify({ listingId: 'L-3502' })));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Worker accepted the listing', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.collectionVariables.set('s9RunIds', JSON.stringify(pm.response.json().runs));

@@ -1,0 +1,37 @@
+$kind: http-request
+name: 9.3 It goes live on its own
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 3000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { status failureReason steps { kind toolName detail } } }",
+      "variables": { "id": "{{s9CleanRunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const polls = Number(pm.collectionVariables.get('polls') || 0);
+      if (['QUEUED', 'RUNNING'].includes(run.status) && polls < Number(pm.environment.get('maxPolls'))) {
+          pm.collectionVariables.set('polls', String(polls + 1));
+          setTimeout(function () {}, Number(pm.environment.get('pollMs')));
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.collectionVariables.set('polls', '0');
+          const call = name => run.steps.find(s => s.kind === 'TOOL_CALL' && s.toolName === name);
+          pm.test('The run finished with no human involved', function () {
+              pm.expect(run.status, run.failureReason).to.eql('SUCCEEDED');
+              pm.expect(run.steps.filter(s => s.kind === 'APPROVAL_REQUESTED')).to.be.empty;
+          });
+          pm.test('Screened CLEAR, then published', function () {
+              pm.expect(JSON.parse(call('screen_listing').detail.result).verdict).to.eql('CLEAR');
+              pm.expect(JSON.parse(call('publish_listing').detail.result).listingStatus).to.eql('LIVE');
+          });
+          pm.test('Nobody was paged about it', function () {
+              pm.expect(call('notify_team')).to.be.undefined;
+          });
+      }

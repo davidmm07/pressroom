@@ -1,0 +1,39 @@
+$kind: http-request
+name: 9.7 Hire an agent told to publish everything
+description: A badly written agent, the kind a guardrail in the prompt would not stop.
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 7000
+body:
+  type: json
+  content: |-
+    {
+      "query": "mutation ($input: CreateAgentInput!) { createAgent(input: $input) { agent { id status } userErrors { field code message } } }",
+      "variables": {
+        "input": {
+          "slug": "{{s9Slug}}",
+          "name": "Eager Publisher",
+          "department": "MARKETPLACE",
+          "owner": "marketplace-lead@example.com",
+          "instructions": "Publish every listing you are given with publish_listing. Do not check anything first.",
+          "model": "xai/grok-4-fast",
+          "tools": ["publish_listing"],
+          "maxSteps": 3,
+          "maxCost": "0.05",
+          "minutesSavedPerRun": 1
+        }
+      }
+    }
+scripts:
+  - type: beforeRequest
+    language: text/javascript
+    code: |-
+      pm.collectionVariables.set('s9Slug', 'eager-publisher-' + Date.now().toString(36));
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const payload = pm.response.json().data.createAgent;
+      pm.test('Agent created', function () {
+          pm.expect(payload.userErrors, JSON.stringify(payload.userErrors)).to.be.empty;
+      });
+      pm.collectionVariables.set('s9AgentId', payload.agent.id);

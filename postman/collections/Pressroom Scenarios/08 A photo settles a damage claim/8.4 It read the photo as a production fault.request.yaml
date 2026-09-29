@@ -1,0 +1,30 @@
+$kind: http-request
+name: 8.4 It read the photo as a production fault
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 4000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { steps { kind toolName detail } } }",
+      "variables": { "id": "{{s8RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const steps = pm.response.json().data.run.steps;
+      const assess = steps.find(s => s.kind === 'TOOL_CALL' && s.toolName === 'assess_damage_photo');
+      const verdict = JSON.parse(assess.detail.result);
+      pm.test('The photo shows a misprint, made on the factory floor', function () {
+          pm.expect(verdict.defect).to.eql('MISPRINT');
+          pm.expect(verdict.cause).to.eql('PRODUCTION');
+      });
+      pm.test('The claims policy says reprint, not refund', function () {
+          pm.expect(verdict.remedy).to.eql('REPRINT');
+          pm.expect(verdict.notNeeded).to.include('issue_refund');
+      });
+      pm.test('Nothing has been reprinted yet', function () {
+          pm.expect(steps.filter(s => s.kind === 'TOOL_CALL' && s.toolName === 'order_reprint')).to.be.empty;
+      });

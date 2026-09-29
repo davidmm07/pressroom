@@ -1,6 +1,6 @@
 $kind: collection
 description: |-
-  Seven business scenarios that show what Pressroom is for, each one a folder
+  Nine business scenarios that show what Pressroom is for, each one a folder
   you can run on its own. Every scenario answers a question a company asks
   before it lets AI agents do real work:
 
@@ -11,6 +11,8 @@ description: |-
   5. **An agent that does not deliver is let go.** How do we stop paying for automations nobody uses?
   6. **From intake request to working agent.** How does a department get an agent, and how do we prove it shipped?
   7. **API errors a client can act on.** What does a developer get back when something is wrong?
+  8. **A photo settles a damage claim.** Can an agent handle the judgment call and leave a person one click?
+  9. **A flagged design is never published.** Do the rules hold even when an agent's instructions are wrong?
 
   Requirements: the stack running with its demo data (`make up`), without model
   API keys so every agent uses the free, deterministic sandbox model. Scenarios
@@ -61,6 +63,18 @@ variables:
   s7AgentId: ""
   s7StaleVersion: ""
   s7RunId: ""
+  s8MessageId: ""
+  s8EventData: ""
+  s8RunIds: ""
+  s8RunId: ""
+  s9MessageId: ""
+  s9EventData: ""
+  s9RunIds: ""
+  s9CleanRunId: ""
+  s9FlaggedRunId: ""
+  s9Slug: ""
+  s9AgentId: ""
+  s9RunId: ""
 scripts:
   - type: http:beforeRequest
     code: |-

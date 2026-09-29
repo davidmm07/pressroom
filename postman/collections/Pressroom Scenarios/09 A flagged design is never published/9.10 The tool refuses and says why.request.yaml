@@ -1,0 +1,34 @@
+$kind: http-request
+name: 9.10 The tool refuses and says why
+method: POST
+url: "{{apiUrl}}/graphql"
+order: 10000
+body:
+  type: json
+  content: |-
+    {
+      "query": "query ($id: ID!) { run(id: $id) { status failureReason output steps { kind toolName detail } } }",
+      "variables": { "id": "{{s9RunId}}" }
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const run = pm.response.json().data.run;
+      const polls = Number(pm.collectionVariables.get('polls') || 0);
+      if (['QUEUED', 'RUNNING'].includes(run.status) && polls < Number(pm.environment.get('maxPolls'))) {
+          pm.collectionVariables.set('polls', String(polls + 1));
+          setTimeout(function () {}, Number(pm.environment.get('pollMs')));
+          pm.execution.setNextRequest(pm.info.requestId);
+      } else {
+          pm.collectionVariables.set('polls', '0');
+          const publish = run.steps.find(s => s.kind === 'TOOL_CALL' && s.toolName === 'publish_listing');
+          pm.test('The agent tried to publish it', function () {
+              pm.expect(publish, 'publish_listing call').to.be.an('object');
+          });
+          pm.test('The tool refused: the listing needs review', function () {
+              pm.expect(publish.detail.isError).to.be.true;
+              pm.expect(publish.detail.result).to.include('needs review');
+          });
+          console.log('Outcome: the instructions said publish everything; the tool said no. ' + run.output);
+      }

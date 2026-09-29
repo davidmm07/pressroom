@@ -1,0 +1,17 @@
+$kind: collection
+name: 08 A photo settles a damage claim
+order: 8000
+description: |-
+  **Why it matters.** A customer with a damaged or misprinted order sends a
+  photo, and nothing has to come back. Someone still has to look at the
+  photo, work out what went wrong, pick a reprint or a refund, write the
+  reply and tell the factory. The Damage Claim Assessor does all of that and
+  leaves a person one decision: approve the reprint.
+
+  **What this scenario proves.**
+  1. A customer sends a photo of 40 misprinted stickers and asks for a reprint.
+  2. The agent reads the photo as a production fault and proposes reprinting
+     exactly those 40 units. Nothing is reprinted yet.
+  3. The lead approves. The agent checks its reply against the support style
+     guide, drafts it, and tells the team so manufacturing hears about it.
+  4. It never proposed a refund on top of the reprint.

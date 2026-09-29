@@ -1,0 +1,17 @@
+$kind: collection
+name: 09 A flagged design is never published
+order: 9000
+description: |-
+  **Why it matters.** Anyone can open a store and list designs, and most of
+  them are fine. The Listing Screener publishes clean designs on its own and
+  holds the rest for trust and safety. The rule that a flagged design never
+  goes live is enforced by the publish tool itself, not by the agent's
+  instructions, so it holds even for an agent told to publish everything.
+
+  **What this scenario proves.**
+  1. A clean design is screened and published with no human involved.
+  2. A design that names a protected character is flagged with its reasons,
+     held back, and the team is told.
+  3. An agent whose instructions say "publish everything" still cannot
+     publish the flagged design: the tool refuses and the refusal is on
+     record.
