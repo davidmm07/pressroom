@@ -75,8 +75,8 @@ func (SandboxImageStudio) Process(_ context.Context, operation, artworkURL strin
 	}
 	q := u.Query()
 	q.Set("op", operation)
-	if f, ok := params["factor"]; ok {
-		q.Set("factor", fmt.Sprint(f))
+	for k, v := range params {
+		q.Set(k, fmt.Sprint(v)) // Encode sorts keys, so the URL is stable
 	}
 	u.RawQuery = q.Encode()
 	return ImageResult{ArtworkURL: u.String(), Operation: operation}, nil

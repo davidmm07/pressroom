@@ -54,7 +54,9 @@ type Commerce interface {
 }
 
 // PGCommerce keeps the storefront demo tables in Pressroom's own database so
-// the project runs without the real order service.
+// the project runs without the real order service. It also stands in for
+// the marketplace, the factory, the review feed and giveaways, each of
+// which is a separate service in production.
 type PGCommerce struct {
 	pool *pgxpool.Pool
 }
@@ -107,7 +109,10 @@ func (c *PGCommerce) Record(ctx context.Context, kind, key string, payload any) 
 func newRef(kind string) string {
 	var b [6]byte
 	_, _ = rand.Read(b[:])
-	prefix := map[string]string{"PROOF": "pf", "DRAFT_REPLY": "dr", "REFUND": "re", "PROMO": "pr", "EMAIL": "em"}[kind]
+	prefix := map[string]string{
+		"PROOF": "pf", "DESIGN_REQUEST": "ds", "DRAFT_REPLY": "dr", "REFUND": "re", "REPRINT": "rp", "PROMO": "pr", "EMAIL": "em",
+		"LISTING_PUBLISH": "lp", "REROUTE": "rr", "DEAL": "dl", "DEFECT_REPORT": "df",
+	}[kind]
 	if prefix == "" {
 		prefix = "ac"
 	}

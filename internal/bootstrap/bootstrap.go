@@ -69,8 +69,10 @@ func Build(ctx context.Context, cfg config.Config, log *slog.Logger) (*App, erro
 		studio = tools.HTTPImageStudio{BaseURL: cfg.ImageStudioURL, Token: cfg.ImageStudioToken}
 	}
 	slack := tools.Slack{WebhookURL: cfg.SlackWebhookURL}
+	demo := tools.NewPGCommerce(pool)
 	registry, err := tools.Standard(tools.Dependencies{
-		Commerce: tools.NewPGCommerce(pool), Studio: studio, Carrier: tools.SandboxCarrier{}, Slack: slack,
+		Commerce: demo, Studio: studio, Carrier: tools.SandboxCarrier{}, Slack: slack, Vision: tools.SandboxVision{},
+		Marketplace: demo, Factory: demo, Reviews: demo, Giveaways: demo,
 	})
 	if err != nil {
 		pool.Close()

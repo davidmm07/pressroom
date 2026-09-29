@@ -1,5 +1,6 @@
 // Package tools is the toolbox the crew works with: the order database, the
-// image studio, the carrier, the helpdesk, payments and Slack.
+// image studio, the carrier, the helpdesk, payments, the marketplace, the
+// factory floor, the review feed, giveaways and Slack.
 //
 // Every tool declares a JSON Schema that is sent to the model verbatim and
 // enforced here before the tool runs, so a hallucinated or malformed call

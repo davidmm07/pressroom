@@ -77,17 +77,20 @@ func TestRegistryValidatesArgumentsAgainstTheSchema(t *testing.T) {
 
 func TestRegistryCatalog(t *testing.T) {
 	r, _ := registry(t)
-	names := []string{}
-	approval := map[string]bool{}
+	names, approval := []string{}, []string{}
 	for _, s := range r.Catalog() {
 		names = append(names, s.Name)
-		approval[s.Name] = s.RequiresApproval
+		if s.RequiresApproval {
+			approval = append(approval, s.Name)
+		}
 	}
-	if len(names) != 13 {
+	if len(names) != 27 {
 		t.Fatalf("catalog = %v", names)
 	}
-	if !approval["issue_refund"] || !approval["queue_email"] || approval["lookup_order"] {
-		t.Fatalf("approval flags wrong: %v", approval)
+	// Everything that spends money, reaches a customer's inbox, changes
+	// public prices or reshuffles the factory floor waits for a person.
+	if got := strings.Join(approval, ","); got != "issue_refund,order_reprint,propose_deal,queue_email,reroute_job" {
+		t.Fatalf("tools needing approval = %s", got)
 	}
 	if err := r.Register(tools.InspectArtwork()); err == nil {
 		t.Fatal("duplicate registration must fail")
