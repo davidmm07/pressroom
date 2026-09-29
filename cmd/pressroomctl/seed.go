@@ -34,9 +34,12 @@ func seed(ctx context.Context, a *bootstrap.App, log *slog.Logger) error {
 	if err := seedOrders(ctx, a, now, stalled, inTransit, delivered); err != nil {
 		return fmt.Errorf("seed orders: %w", err)
 	}
+	if err := seedSystems(ctx, a, now); err != nil {
+		return fmt.Errorf("seed systems: %w", err)
+	}
 
 	crew := map[string]*domain.Agent{}
-	for _, spec := range crewSpecs() {
+	for _, spec := range append(crewSpecs(), newHires()...) {
 		agent, err := a.Agents.Create(ctx, spec)
 		if err != nil {
 			return fmt.Errorf("create %s: %w", spec.Slug, err)
@@ -107,6 +110,7 @@ func seed(ctx context.Context, a *bootstrap.App, log *slog.Logger) error {
 		{"demo-4", "ticket.created", `{"ticketId":"T-5002","orderId":"ORD-1045","customerEmail":"ana.lopez@example.com","message":"Two of the magnets arrived cracked. Could I get a partial refund?","amountCents":1500}`},
 		{"demo-5", "customer.reorder_due", `{"customerEmail":"priya.nair@example.com","percentOff":10}`},
 	}
+	events = append(events, newHireEvents...)
 	for _, e := range events {
 		if _, err := a.Runs.Dispatch(ctx, e.id, e.typ, json.RawMessage(e.data)); err != nil {
 			return fmt.Errorf("dispatch %s: %w", e.typ, err)
@@ -145,7 +149,7 @@ Replies are drafts that a support agent sends. Be warm and brief, and sign as "C
 			Slug: "shipping-watch", Name: "Shipping Watch", Department: domain.DepartmentOperations, Owner: "ops-lead@example.com",
 			Description: "Chases parcels with no carrier scan for five days before the customer has to ask.",
 			Instructions: `You are called when a parcel has had no carrier scan for five days.
-Look up the order and track the shipment. If it is still stalled or has an exception, draft a proactive reply on the ticket from the event (apologise, give the latest scan, say we are on it) and notify_team with severity WARNING so operations can open a carrier claim.
+Look up the order and track the shipment. If it is still stalled or has an exception, draft a proactive reply on the ticket from the event (give the latest scan and say what we are doing about it) and notify_team with severity WARNING so operations can open a carrier claim.
 If it has since been delivered, do nothing else and say so.`,
 			Model: domain.ModelRef{Provider: domain.ProviderOpenAI, Name: "gpt-5-mini"}, Tools: []string{"lookup_order", "track_shipment", "draft_reply", "notify_team"},
 			Triggers: []string{"shipment.stalled"}, Budget: domain.Budget{MaxSteps: 6, MaxCost: domain.MicrosFromUSD(0.25)}, MinutesSavedPerRun: 5,
@@ -226,6 +230,8 @@ func seedOrders(ctx context.Context, a *bootstrap.App, now time.Time, stalled, i
 		{"ORD-1046", "joe.rivera@example.com", "Joe Rivera", "BUTTONS", 200, 5800, "SHIPPED", "APPROVED", str("DHL"), str(inTransit), day(6), tm(day(3))},
 		{"ORD-1047", "sara.okafor@example.com", "Sara Okafor", "PACKAGING", 500, 124000, "PROOF_PENDING", "NOT_SENT", nil, nil, day(2), nil},
 		{"ORD-1048", "joe.rivera@example.com", "Joe Rivera", "STICKERS", 300, 9900, "PROOF_PENDING", "NOT_SENT", nil, nil, day(0), nil},
+		{"ORD-1049", "mia.santos@example.com", "Mia Santos", "STICKERS", 200, 7900, "PROOF_PENDING", "CHANGES_REQUESTED", nil, nil, day(1), nil},
+		{"ORD-1050", "tom.becker@example.com", "Tom Becker", "STICKERS", 500, 14500, "DELIVERED", "APPROVED", str("UPS"), str("1ZPR1050"), day(9), tm(day(6))},
 		{"ORD-0981", "priya.nair@example.com", "Priya Nair", "STICKERS", 500, 14500, "DELIVERED", "APPROVED", str("UPS"), str("1ZPR0981"), day(210), tm(day(206))},
 		{"ORD-0990", "priya.nair@example.com", "Priya Nair", "STICKERS", 500, 14500, "DELIVERED", "APPROVED", str("UPS"), str("1ZPR0990"), day(150), tm(day(146))},
 		{"ORD-1001", "priya.nair@example.com", "Priya Nair", "LABELS", 1000, 18900, "DELIVERED", "APPROVED", str("UPS"), str("1ZPR1001"), day(84), tm(day(80))},
@@ -260,6 +266,15 @@ func seedOpportunities(ctx context.Context, a *bootstrap.App, crew map[string]*d
 		{domain.OpportunityInput{Title: "Reconcile processor payouts", Problem: "Finance matches payouts to orders in a spreadsheet every week.",
 			Department: domain.DepartmentFinance, SubmittedBy: "finance-lead@example.com", WeeklyVolume: 40, MinutesPerTask: 20,
 			DataSensitivity: domain.LevelHigh, ErrorCost: domain.LevelHigh}, []domain.OpportunityStatus{domain.OpportunityApproved}, ""},
+		{domain.OpportunityInput{Title: "Review damage claim photos", Problem: "Every claim photo is opened by hand and compared with the proof before we offer a reprint or refund.",
+			Department: domain.DepartmentCustomerExperience, SubmittedBy: "cx-lead@example.com", WeeklyVolume: 150, MinutesPerTask: 8,
+			DataSensitivity: domain.LevelMedium, ErrorCost: domain.LevelMedium}, []domain.OpportunityStatus{domain.OpportunityApproved, domain.OpportunityShipped}, "claim-assessor"},
+		{domain.OpportunityInput{Title: "Get new stores to their first sale", Problem: "Most marketplace stores never sell, and nobody has time to tell sellers what to fix.",
+			Department: domain.DepartmentMarketplace, SubmittedBy: "marketplace-lead@example.com", WeeklyVolume: 400, MinutesPerTask: 15,
+			DataSensitivity: domain.LevelLow, ErrorCost: domain.LevelLow}, []domain.OpportunityStatus{domain.OpportunityApproved, domain.OpportunityShipped}, "store-coach"},
+		{domain.OpportunityInput{Title: "Catch jobs that will miss their ship date", Problem: "Late jobs are found at the packing table, when it is too late to move them to a free press.",
+			Department: domain.DepartmentManufacturing, SubmittedBy: "manufacturing-lead@example.com", WeeklyVolume: 60, MinutesPerTask: 12,
+			DataSensitivity: domain.LevelLow, ErrorCost: domain.LevelMedium}, []domain.OpportunityStatus{domain.OpportunityApproved, domain.OpportunityShipped}, "production-watch"},
 		{domain.OpportunityInput{Title: "Write listings for new sticker shapes", Problem: "Every new die-cut shape needs a product description and alt text.",
 			Department: domain.DepartmentMarketing, SubmittedBy: "growth-lead@example.com", WeeklyVolume: 15, MinutesPerTask: 30,
 			DataSensitivity: domain.LevelLow, ErrorCost: domain.LevelLow}, nil, ""},
