@@ -17,7 +17,7 @@ body:
         "input": {
           "agentId": "{{s4AgentId}}",
           "idempotencyKey": "{{s4TicketId}}",
-          "input": { "ticketId": "{{s4TicketId}}", "orderId": "SM-1046", "message": "Where are my buttons?" }
+          "input": { "ticketId": "{{s4TicketId}}", "orderId": "ORD-1046", "message": "Where are my buttons?" }
         }
       }
     }

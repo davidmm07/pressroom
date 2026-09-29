@@ -38,5 +38,5 @@ scripts:
           pm.expect(Number(run.cost)).to.be.below(1);
       });
 
-      console.log('Outcome: proof for SM-1048 sent in ' + Number(pm.collectionVariables.get('s1Seconds')).toFixed(1) +
+      console.log('Outcome: proof for ORD-1048 sent in ' + Number(pm.collectionVariables.get('s1Seconds')).toFixed(1) +
           ' s for $' + Number(run.cost).toFixed(4) + '. A prepress technician would spend about 6 minutes.');

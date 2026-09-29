@@ -12,7 +12,7 @@ export const jsonObject = z.string().transform((text, ctx) => {
   try {
     const value: unknown = JSON.parse(text);
     if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'must be a JSON object, e.g. {"orderId": "SM-1042"}' });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'must be a JSON object, e.g. {"orderId": "ORD-1042"}' });
       return z.NEVER;
     }
     return value as Record<string, unknown>;

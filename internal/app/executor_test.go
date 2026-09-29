@@ -22,15 +22,15 @@ func stepKinds(r *domain.Run) []domain.StepKind {
 func TestExecutorCompletesAToolLoop(t *testing.T) {
 	h := newHarness(t)
 	agent := h.hireAgent("support-triage", "lookup_order")
-	h.model.callTool("c1", "lookup_order", `{"orderId":"SM-1042"}`).answer("Order SM-1042 shipped; tracking sent.")
+	h.model.callTool("c1", "lookup_order", `{"orderId":"ORD-1042"}`).answer("Order ORD-1042 shipped; tracking sent.")
 
-	run := h.start(agent, `{"ticketId":"T-9","orderId":"SM-1042"}`)
+	run := h.start(agent, `{"ticketId":"T-9","orderId":"ORD-1042"}`)
 	if err := h.executor.Execute(context.Background(), run.ID); err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
 
 	got := h.reload(run.ID)
-	if got.Status != domain.RunSucceeded || got.Output != "Order SM-1042 shipped; tracking sent." {
+	if got.Status != domain.RunSucceeded || got.Output != "Order ORD-1042 shipped; tracking sent." {
 		t.Fatalf("status=%s output=%q reason=%q", got.Status, got.Output, got.FailureReason)
 	}
 	want := []domain.StepKind{domain.StepModelTurn, domain.StepToolCall, domain.StepModelTurn, domain.StepCompleted}
@@ -57,9 +57,9 @@ func TestExecutorPausesForApprovalAndResumes(t *testing.T) {
 	h := newHarness(t)
 	ctx := context.Background()
 	agent := h.hireAgent("refund-desk", "lookup_order", "issue_refund")
-	h.model.callTool("c1", "issue_refund", `{"orderId":"SM-1042","amountCents":1500}`).answer("Refunded $15.")
+	h.model.callTool("c1", "issue_refund", `{"orderId":"ORD-1042","amountCents":1500}`).answer("Refunded $15.")
 
-	run := h.start(agent, `{"orderId":"SM-1042"}`)
+	run := h.start(agent, `{"orderId":"ORD-1042"}`)
 	if err := h.executor.Execute(ctx, run.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -90,9 +90,9 @@ func TestExecutorRelaysADenialToTheModel(t *testing.T) {
 	h := newHarness(t)
 	ctx := context.Background()
 	agent := h.hireAgent("refund-desk", "issue_refund")
-	h.model.callTool("c1", "issue_refund", `{"orderId":"SM-1042","amountCents":99900}`).answer("Escalated to a human.")
+	h.model.callTool("c1", "issue_refund", `{"orderId":"ORD-1042","amountCents":99900}`).answer("Escalated to a human.")
 
-	run := h.start(agent, `{"orderId":"SM-1042"}`)
+	run := h.start(agent, `{"orderId":"ORD-1042"}`)
 	_ = h.executor.Execute(ctx, run.ID)
 	if _, err := h.runSvc.Deny(ctx, run.ID, "cx-lead@example.com", "refund exceeds order total"); err != nil {
 		t.Fatal(err)
@@ -151,7 +151,7 @@ func TestExecutorRetriesTransientModelErrorsFromCheckpoint(t *testing.T) {
 	ctx := context.Background()
 	agent := h.hireAgent("support-triage", "lookup_order")
 	h.model.
-		callTool("c1", "lookup_order", `{"orderId":"SM-1042"}`).
+		callTool("c1", "lookup_order", `{"orderId":"ORD-1042"}`).
 		fail(port.Transient(errors.New("529 overloaded"), 30*time.Second)).
 		answer("Done.")
 
@@ -177,7 +177,7 @@ func TestExecutorStopsAtTheStepBudget(t *testing.T) {
 	h := newHarness(t)
 	agent := h.hireAgent("support-triage", "lookup_order")
 	for i := 0; i < agent.Budget.MaxSteps+2; i++ {
-		h.model.callTool("c", "lookup_order", `{"orderId":"SM-1042"}`)
+		h.model.callTool("c", "lookup_order", `{"orderId":"ORD-1042"}`)
 	}
 	run := h.start(agent, `{}`)
 	if err := h.executor.Execute(context.Background(), run.ID); err != nil {

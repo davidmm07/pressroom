@@ -20,7 +20,7 @@ scripts:
     code: |-
       const ticket = {
           ticketId: 'T-' + Date.now(),
-          orderId: 'SM-1045',
+          orderId: 'ORD-1045',
           customerEmail: 'ana.lopez@example.com',
           message: 'Two of the magnets arrived cracked. Could I get a partial refund?',
           amountCents: 1500

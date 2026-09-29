@@ -19,7 +19,7 @@ type fakeCommerce struct {
 }
 
 func (f *fakeCommerce) Order(_ context.Context, id string) (tools.Order, error) {
-	if id != "SM-1042" {
+	if id != "ORD-1042" {
 		return tools.Order{}, tools.ErrNotFound
 	}
 	return tools.Order{ID: id, CustomerEmail: "ana@example.com", Product: "STICKERS", TotalCents: 4900, PlacedAt: time.Now()}, nil
@@ -60,10 +60,10 @@ func TestRegistryValidatesArgumentsAgainstTheSchema(t *testing.T) {
 	}{
 		{"lookup_order", `{}`, "missing property 'orderId'"},
 		{"lookup_order", `{"orderId":"1042"}`, "/orderId"},
-		{"issue_refund", `{"orderId":"SM-1042","amountCents":900000,"reason":"damaged"}`, "/amountCents"},
+		{"issue_refund", `{"orderId":"ORD-1042","amountCents":900000,"reason":"damaged"}`, "/amountCents"},
 		{"create_promo_code", `{"customerEmail":"ana@example.com","percentOff":50,"product":"STICKERS"}`, "/percentOff"},
 		{"create_promo_code", `{"customerEmail":"not-an-email","percentOff":10,"product":"STICKERS"}`, "/customerEmail"},
-		{"lookup_order", `{"orderId":"SM-1042","extra":true}`, "additional properties"},
+		{"lookup_order", `{"orderId":"ORD-1042","extra":true}`, "additional properties"},
 		{"lookup_order", `{"orderId":`, "not valid JSON"},
 	}
 	for _, tt := range tests {
@@ -96,7 +96,7 @@ func TestRegistryCatalog(t *testing.T) {
 
 func TestRefundCannotExceedTheOrderTotal(t *testing.T) {
 	r, _ := registry(t)
-	_, err := r.Invoke(context.Background(), "issue_refund", json.RawMessage(`{"orderId":"SM-1042","amountCents":5000,"reason":"misprint"}`))
+	_, err := r.Invoke(context.Background(), "issue_refund", json.RawMessage(`{"orderId":"ORD-1042","amountCents":5000,"reason":"misprint"}`))
 	if err == nil || !strings.Contains(err.Error(), "exceeds the order total") {
 		t.Fatalf("got %v", err)
 	}
@@ -105,7 +105,7 @@ func TestRefundCannotExceedTheOrderTotal(t *testing.T) {
 func TestSideEffectsAreIdempotentPerToolCall(t *testing.T) {
 	r, c := registry(t)
 	ctx := port.WithToolCall(context.Background(), port.ToolCallInfo{RunID: "run-1", CallID: "call-1"})
-	args := json.RawMessage(`{"orderId":"SM-1042","amountCents":1200,"reason":"late delivery"}`)
+	args := json.RawMessage(`{"orderId":"ORD-1042","amountCents":1200,"reason":"late delivery"}`)
 
 	first, err := r.Invoke(ctx, "issue_refund", args)
 	if err != nil {

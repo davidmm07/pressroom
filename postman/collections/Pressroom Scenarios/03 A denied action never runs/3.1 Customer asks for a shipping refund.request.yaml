@@ -20,7 +20,7 @@ scripts:
     code: |-
       const ticket = {
           ticketId: 'T-' + Date.now(),
-          orderId: 'SM-1042',
+          orderId: 'ORD-1042',
           customerEmail: 'ana.lopez@example.com',
           message: 'Could you refund what I paid for shipping?',
           amountCents: 2000

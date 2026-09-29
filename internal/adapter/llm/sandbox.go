@@ -171,7 +171,7 @@ func extractJSON(s string) map[string]any {
 }
 
 // mergeObject copies scalar fields and flattens one level of nesting, so
-// {"order":{"id":"SM-1"}} also yields "id".
+// {"order":{"id":"ORD-1"}} also yields "id".
 func mergeObject(dst, src map[string]any) {
 	for k, v := range src {
 		switch val := v.(type) {

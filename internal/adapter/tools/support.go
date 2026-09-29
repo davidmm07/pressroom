@@ -13,7 +13,7 @@ type orderInput struct {
 	OrderID string `json:"orderId"`
 }
 
-const orderIDSchema = `{"type": "string", "pattern": "^SM-[0-9]{3,8}$", "description": "Order number, e.g. SM-1042"}`
+const orderIDSchema = `{"type": "string", "pattern": "^ORD-[0-9]{3,8}$", "description": "Order number, e.g. ORD-1042"}`
 
 // LookupOrder reads an order from the storefront.
 func LookupOrder(c Commerce) Tool {

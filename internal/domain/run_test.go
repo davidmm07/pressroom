@@ -25,7 +25,7 @@ func newRun(t *testing.T) *domain.Run {
 	t.Helper()
 	a := activeAgent(t)
 	r, err := domain.NewRun(a, domain.NewRunParams{
-		Input: json.RawMessage(`{"orderId":"SM-1042"}`), Trigger: domain.TriggerManual, Model: a.Model,
+		Input: json.RawMessage(`{"orderId":"ORD-1042"}`), Trigger: domain.TriggerManual, Model: a.Model,
 	}, now)
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +58,7 @@ func TestRunToolLoopBatchesResultsIntoOneTurn(t *testing.T) {
 		t.Fatal(err)
 	}
 	calls := []domain.ToolCall{
-		{ID: "c1", Name: "lookup_order", Arguments: json.RawMessage(`{"orderId":"SM-1042"}`)},
+		{ID: "c1", Name: "lookup_order", Arguments: json.RawMessage(`{"orderId":"ORD-1042"}`)},
 		{ID: "c2", Name: "track_shipment", Arguments: json.RawMessage(`{"trackingNumber":"1Z"}`)},
 	}
 	usage := domain.Usage{InputTokens: 1000, OutputTokens: 200}

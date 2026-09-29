@@ -23,8 +23,8 @@ scripts:
     language: text/javascript
     code: |-
       const upload = {
-          orderId: 'SM-1048',
-          artworkUrl: 'https://cdn.example.com/uploads/sm-1048/fox-logo.png',
+          orderId: 'ORD-1048',
+          artworkUrl: 'https://cdn.example.com/uploads/ord-1048/fox-logo.png',
           product: 'STICKERS',
           widthPx: 600,
           heightPx: 600,

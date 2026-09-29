@@ -129,7 +129,7 @@ func SendProof(c Commerce) Tool {
 		InputSchema: Schema(`{
 		  "type": "object",
 		  "properties": {
-		    "orderId":    {"type": "string", "pattern": "^SM-[0-9]{3,8}$"},
+		    "orderId":    {"type": "string", "pattern": "^ORD-[0-9]{3,8}$"},
 		    "artworkUrl": {"type": "string", "format": "uri"},
 		    "note":       {"type": "string", "minLength": 1, "maxLength": 1000}
 		  },

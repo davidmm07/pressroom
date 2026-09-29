@@ -9,7 +9,7 @@ body:
   content: |-
     {
       "query": "mutation ($input: StartRunInput!) { startRun(input: $input) { run { id } userErrors { code message } } }",
-      "variables": { "input": { "agentId": "{{s6AgentId}}", "input": { "orderId": "SM-1043" } } }
+      "variables": { "input": { "agentId": "{{s6AgentId}}", "input": { "orderId": "ORD-1043" } } }
     }
 scripts:
   - type: afterResponse

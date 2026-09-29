@@ -119,7 +119,7 @@ Start a run and read its trace:
 mutation {
   startRun(input: {
     agentSlug: "support-triage",
-    input: { ticketId: "T-9001", orderId: "SM-1046", message: "Where are my buttons?" },
+    input: { ticketId: "T-9001", orderId: "ORD-1046", message: "Where are my buttons?" },
     idempotencyKey: "ticket-T-9001"
   }) {
     run { id status }

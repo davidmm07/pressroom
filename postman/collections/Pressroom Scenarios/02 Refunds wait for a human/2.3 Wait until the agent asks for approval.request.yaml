@@ -25,10 +25,10 @@ scripts:
           pm.test('The run paused for a human', function () {
               pm.expect(run.status, run.failureReason).to.eql('AWAITING_APPROVAL');
           });
-          pm.test('It wants to refund $15.00 on SM-1045', function () {
+          pm.test('It wants to refund $15.00 on ORD-1045', function () {
               pm.expect(run.pendingToolCall.tool.name).to.eql('issue_refund');
               pm.expect(run.pendingToolCall.tool.requiresApproval).to.be.true;
               pm.expect(run.pendingToolCall.arguments.amountCents).to.eql(1500);
-              pm.expect(run.pendingToolCall.arguments.orderId).to.eql('SM-1045');
+              pm.expect(run.pendingToolCall.arguments.orderId).to.eql('ORD-1045');
           });
       }

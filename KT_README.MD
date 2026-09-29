@@ -245,16 +245,16 @@ You can also send events the way the storefront would:
 
 ```bash
 go run ./cmd/pressroomctl dispatch ticket.created \
-  '{"ticketId":"T-9001","orderId":"SM-1046","message":"Where are my buttons?"}'
+  '{"ticketId":"T-9001","orderId":"ORD-1046","message":"Where are my buttons?"}'
 ```
 
 With Docker, run the CLI container instead:
 
 ```bash
-docker compose run --rm seed dispatch ticket.created '{"ticketId":"T-9001","orderId":"SM-1046"}'
+docker compose run --rm seed dispatch ticket.created '{"ticketId":"T-9001","orderId":"ORD-1046"}'
 ```
 
-Useful seeded data: orders `SM-1042` to `SM-1048` (SM-1042 has a stalled
+Useful seeded data: orders `ORD-1042` to `ORD-1048` (ORD-1042 has a stalled
 parcel), customers `ana.lopez@example.com` and `priya.nair@example.com`.
 Event types in use: `artwork.uploaded`, `ticket.created`, `shipment.stalled`,
 `customer.reorder_due`.

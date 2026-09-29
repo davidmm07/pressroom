@@ -406,7 +406,7 @@ export function AgentPage() {
 }
 
 function RunForm({ agentId, onStarted }: { agentId: string; onStarted: (id: string) => void }) {
-  const [input, setInput] = useState('{\n  "orderId": "SM-1042"\n}');
+  const [input, setInput] = useState('{\n  "orderId": "ORD-1042"\n}');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [result, startRun] = useMutation(StartRun);
 

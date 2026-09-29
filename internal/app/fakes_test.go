@@ -413,7 +413,7 @@ type fakeTools struct {
 func newFakeTools() *fakeTools {
 	t := &fakeTools{specs: map[string]domain.ToolSpec{}, calls: map[string]int{}, fn: map[string]func(json.RawMessage) (json.RawMessage, error){}}
 	t.add(domain.ToolSpec{Name: "lookup_order"}, func(json.RawMessage) (json.RawMessage, error) {
-		return json.RawMessage(`{"orderId":"SM-1042","status":"SHIPPED","trackingNumber":"1ZPRESS"}`), nil
+		return json.RawMessage(`{"orderId":"ORD-1042","status":"SHIPPED","trackingNumber":"1ZPRESS"}`), nil
 	})
 	t.add(domain.ToolSpec{Name: "issue_refund", RequiresApproval: true}, func(json.RawMessage) (json.RawMessage, error) {
 		return json.RawMessage(`{"refundId":"re_1"}`), nil

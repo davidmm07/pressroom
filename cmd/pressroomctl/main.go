@@ -4,7 +4,7 @@
 //	pressroomctl migrate
 //	pressroomctl seed
 //	pressroomctl evaluate
-//	pressroomctl dispatch ticket.created '{"ticketId":"T-1","orderId":"SM-1042"}'
+//	pressroomctl dispatch ticket.created '{"ticketId":"T-1","orderId":"ORD-1042"}'
 package main
 
 import (

@@ -101,10 +101,10 @@ func seed(ctx context.Context, a *bootstrap.App, log *slog.Logger) error {
 
 	// Live work for the worker: events exactly as Pub/Sub would deliver them.
 	events := []struct{ id, typ, data string }{
-		{"demo-1", "artwork.uploaded", `{"orderId":"SM-1048","artworkUrl":"https://cdn.example.com/uploads/sm-1048/fox-logo.png","product":"STICKERS","widthPx":600,"heightPx":600,"printWidthIn":3,"printHeightIn":3,"colorMode":"RGB","hasTransparentBackground":false}`},
-		{"demo-2", "artwork.uploaded", `{"orderId":"SM-1044","artworkUrl":"https://cdn.example.com/uploads/sm-1044/crew-shirt.png","product":"TSHIRTS","widthPx":1800,"heightPx":2400,"printWidthIn":12,"printHeightIn":16,"colorMode":"CMYK","hasTransparentBackground":true}`},
-		{"demo-3", "ticket.created", `{"ticketId":"T-5001","orderId":"SM-1042","customerEmail":"ana.lopez@example.com","message":"Hi! My stickers were supposed to arrive last week and tracking has not moved."}`},
-		{"demo-4", "ticket.created", `{"ticketId":"T-5002","orderId":"SM-1045","customerEmail":"ana.lopez@example.com","message":"Two of the magnets arrived cracked. Could I get a partial refund?","amountCents":1500}`},
+		{"demo-1", "artwork.uploaded", `{"orderId":"ORD-1048","artworkUrl":"https://cdn.example.com/uploads/ord-1048/fox-logo.png","product":"STICKERS","widthPx":600,"heightPx":600,"printWidthIn":3,"printHeightIn":3,"colorMode":"RGB","hasTransparentBackground":false}`},
+		{"demo-2", "artwork.uploaded", `{"orderId":"ORD-1044","artworkUrl":"https://cdn.example.com/uploads/ord-1044/crew-shirt.png","product":"TSHIRTS","widthPx":1800,"heightPx":2400,"printWidthIn":12,"printHeightIn":16,"colorMode":"CMYK","hasTransparentBackground":true}`},
+		{"demo-3", "ticket.created", `{"ticketId":"T-5001","orderId":"ORD-1042","customerEmail":"ana.lopez@example.com","message":"Hi! My stickers were supposed to arrive last week and tracking has not moved."}`},
+		{"demo-4", "ticket.created", `{"ticketId":"T-5002","orderId":"ORD-1045","customerEmail":"ana.lopez@example.com","message":"Two of the magnets arrived cracked. Could I get a partial refund?","amountCents":1500}`},
 		{"demo-5", "customer.reorder_due", `{"customerEmail":"priya.nair@example.com","percentOff":10}`},
 	}
 	for _, e := range events {
@@ -219,16 +219,16 @@ func seedOrders(ctx context.Context, a *bootstrap.App, now time.Time, stalled, i
 	str := func(s string) *string { return &s }
 	tm := func(t time.Time) *time.Time { return &t }
 	orders := []order{
-		{"SM-1042", "ana.lopez@example.com", "Ana Lopez", "STICKERS", 250, 8900, "SHIPPED", "APPROVED", str("UPS"), str(stalled), day(12), tm(day(9))},
-		{"SM-1043", "mike.chen@example.com", "Mike Chen", "LABELS", 1000, 16400, "IN_PRODUCTION", "APPROVED", nil, nil, day(3), nil},
-		{"SM-1044", "sara.okafor@example.com", "Sara Okafor", "TSHIRTS", 48, 61200, "PROOF_PENDING", "NOT_SENT", nil, nil, day(1), nil},
-		{"SM-1045", "ana.lopez@example.com", "Ana Lopez", "MAGNETS", 100, 7400, "DELIVERED", "APPROVED", str("USPS"), str(delivered), day(20), tm(day(17))},
-		{"SM-1046", "joe.rivera@example.com", "Joe Rivera", "BUTTONS", 200, 5800, "SHIPPED", "APPROVED", str("DHL"), str(inTransit), day(6), tm(day(3))},
-		{"SM-1047", "sara.okafor@example.com", "Sara Okafor", "PACKAGING", 500, 124000, "PROOF_PENDING", "NOT_SENT", nil, nil, day(2), nil},
-		{"SM-1048", "joe.rivera@example.com", "Joe Rivera", "STICKERS", 300, 9900, "PROOF_PENDING", "NOT_SENT", nil, nil, day(0), nil},
-		{"SM-0981", "priya.nair@example.com", "Priya Nair", "STICKERS", 500, 14500, "DELIVERED", "APPROVED", str("UPS"), str("1ZPR0981"), day(210), tm(day(206))},
-		{"SM-0990", "priya.nair@example.com", "Priya Nair", "STICKERS", 500, 14500, "DELIVERED", "APPROVED", str("UPS"), str("1ZPR0990"), day(150), tm(day(146))},
-		{"SM-1001", "priya.nair@example.com", "Priya Nair", "LABELS", 1000, 18900, "DELIVERED", "APPROVED", str("UPS"), str("1ZPR1001"), day(84), tm(day(80))},
+		{"ORD-1042", "ana.lopez@example.com", "Ana Lopez", "STICKERS", 250, 8900, "SHIPPED", "APPROVED", str("UPS"), str(stalled), day(12), tm(day(9))},
+		{"ORD-1043", "mike.chen@example.com", "Mike Chen", "LABELS", 1000, 16400, "IN_PRODUCTION", "APPROVED", nil, nil, day(3), nil},
+		{"ORD-1044", "sara.okafor@example.com", "Sara Okafor", "TSHIRTS", 48, 61200, "PROOF_PENDING", "NOT_SENT", nil, nil, day(1), nil},
+		{"ORD-1045", "ana.lopez@example.com", "Ana Lopez", "MAGNETS", 100, 7400, "DELIVERED", "APPROVED", str("USPS"), str(delivered), day(20), tm(day(17))},
+		{"ORD-1046", "joe.rivera@example.com", "Joe Rivera", "BUTTONS", 200, 5800, "SHIPPED", "APPROVED", str("DHL"), str(inTransit), day(6), tm(day(3))},
+		{"ORD-1047", "sara.okafor@example.com", "Sara Okafor", "PACKAGING", 500, 124000, "PROOF_PENDING", "NOT_SENT", nil, nil, day(2), nil},
+		{"ORD-1048", "joe.rivera@example.com", "Joe Rivera", "STICKERS", 300, 9900, "PROOF_PENDING", "NOT_SENT", nil, nil, day(0), nil},
+		{"ORD-0981", "priya.nair@example.com", "Priya Nair", "STICKERS", 500, 14500, "DELIVERED", "APPROVED", str("UPS"), str("1ZPR0981"), day(210), tm(day(206))},
+		{"ORD-0990", "priya.nair@example.com", "Priya Nair", "STICKERS", 500, 14500, "DELIVERED", "APPROVED", str("UPS"), str("1ZPR0990"), day(150), tm(day(146))},
+		{"ORD-1001", "priya.nair@example.com", "Priya Nair", "LABELS", 1000, 18900, "DELIVERED", "APPROVED", str("UPS"), str("1ZPR1001"), day(84), tm(day(80))},
 	}
 	for _, o := range orders {
 		_, err := a.Pool.Exec(ctx, `INSERT INTO storefront_orders

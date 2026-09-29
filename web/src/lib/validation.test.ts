@@ -3,7 +3,7 @@ import { agentSchema, jsonObject, opportunitySchema, serverFieldErrors, zodField
 
 describe('jsonObject', () => {
   it('accepts objects and rejects everything else', () => {
-    expect(jsonObject.parse('{"orderId":"SM-1042"}')).toEqual({ orderId: 'SM-1042' });
+    expect(jsonObject.parse('{"orderId":"ORD-1042"}')).toEqual({ orderId: 'ORD-1042' });
     expect(jsonObject.safeParse('[1,2]').success).toBe(false);
     expect(jsonObject.safeParse('{"broken":').success).toBe(false);
   });

@@ -55,7 +55,7 @@ const claudeToolUse = `{
   "content": [
     {"type": "thinking", "thinking": "", "signature": "sig-abc"},
     {"type": "text", "text": "Let me check the order."},
-    {"type": "tool_use", "id": "toolu_1", "name": "lookup_order", "input": {"orderId": "SM-1042"}}
+    {"type": "tool_use", "id": "toolu_1", "name": "lookup_order", "input": {"orderId": "ORD-1042"}}
   ],
   "stop_reason": "tool_use", "stop_sequence": null, "stop_details": null,
   "usage": {"input_tokens": 900, "output_tokens": 120, "cache_creation_input_tokens": 100, "cache_read_input_tokens": 2000}
@@ -69,7 +69,7 @@ func TestAnthropicAdapterRoundTrip(t *testing.T) {
 	req := port.CompletionRequest{
 		Model:           domain.ModelRef{Provider: domain.ProviderAnthropic, Name: "claude-opus-5"},
 		System:          "You check orders.",
-		Messages:        []domain.Message{{Role: domain.RoleUser, Text: "Where is SM-1042?"}},
+		Messages:        []domain.Message{{Role: domain.RoleUser, Text: "Where is ORD-1042?"}},
 		Tools:           []domain.ToolSpec{lookupOrder},
 		MaxOutputTokens: 16000,
 	}
@@ -81,7 +81,7 @@ func TestAnthropicAdapterRoundTrip(t *testing.T) {
 	if c.StopReason != port.StopToolUse || len(c.Message.ToolCalls) != 1 || c.Message.Text != "Let me check the order." {
 		t.Fatalf("completion = %+v", c)
 	}
-	if call := c.Message.ToolCalls[0]; call.ID != "toolu_1" || string(call.Arguments) != `{"orderId": "SM-1042"}` {
+	if call := c.Message.ToolCalls[0]; call.ID != "toolu_1" || string(call.Arguments) != `{"orderId": "ORD-1042"}` {
 		t.Fatalf("tool call = %+v (%s)", call, call.Arguments)
 	}
 	if c.Usage != (domain.Usage{InputTokens: 1000, CachedInputTokens: 2000, OutputTokens: 120}) {
@@ -146,7 +146,7 @@ func TestAnthropicAdapterMapsRefusalsAndErrors(t *testing.T) {
 
 func TestOpenAICompatAdapter(t *testing.T) {
 	response := `{"model":"grok-4-0709","choices":[{"finish_reason":"tool_calls","message":{"content":null,
-	  "tool_calls":[{"id":"call_1","type":"function","function":{"name":"lookup_order","arguments":"{\"orderId\":\"SM-7\"}"}}]}}],
+	  "tool_calls":[{"id":"call_1","type":"function","function":{"name":"lookup_order","arguments":"{\"orderId\":\"ORD-7\"}"}}]}}],
 	  "usage":{"prompt_tokens":500,"completion_tokens":40,"prompt_tokens_details":{"cached_tokens":200}}}`
 	var got capture
 	srv := serve(t, http.StatusOK, response, &got)
@@ -157,7 +157,7 @@ func TestOpenAICompatAdapter(t *testing.T) {
 		Tools: []domain.ToolSpec{lookupOrder},
 		Messages: []domain.Message{
 			{Role: domain.RoleUser, Text: "task"},
-			{Role: domain.RoleAssistant, ToolCalls: []domain.ToolCall{{ID: "call_0", Name: "lookup_order", Arguments: json.RawMessage(`{"orderId":"SM-6"}`)}}},
+			{Role: domain.RoleAssistant, ToolCalls: []domain.ToolCall{{ID: "call_0", Name: "lookup_order", Arguments: json.RawMessage(`{"orderId":"ORD-6"}`)}}},
 			{Role: domain.RoleUser, ToolResults: []domain.ToolResult{{CallID: "call_0", Content: "not found", IsError: true}}},
 		},
 	})
@@ -187,7 +187,7 @@ func TestSandboxPlansFromFacts(t *testing.T) {
 	}}
 	req := port.CompletionRequest{
 		Tools:    []domain.ToolSpec{lookupOrder, trackShipment, draftReply},
-		Messages: []domain.Message{{Role: domain.RoleUser, Text: "Task input (JSON):\n{\"orderId\":\"SM-1\",\"ticketId\":\"T-1\"}\n\nDo it."}},
+		Messages: []domain.Message{{Role: domain.RoleUser, Text: "Task input (JSON):\n{\"orderId\":\"ORD-1\",\"ticketId\":\"T-1\"}\n\nDo it."}},
 	}
 	sb := llm.Sandbox{}
 	step := func() *port.Completion {
@@ -203,7 +203,7 @@ func TestSandboxPlansFromFacts(t *testing.T) {
 		t.Fatalf("first call = %+v", c.Message.ToolCalls)
 	}
 	req.Messages = append(req.Messages, domain.Message{Role: domain.RoleUser, ToolResults: []domain.ToolResult{
-		{CallID: "x", Name: "lookup_order", Content: `{"orderId":"SM-1","trackingNumber":"1ZABC","status":"SHIPPED"}`},
+		{CallID: "x", Name: "lookup_order", Content: `{"orderId":"ORD-1","trackingNumber":"1ZABC","status":"SHIPPED"}`},
 	}})
 	if c := step(); c.Message.ToolCalls[0].Name != "track_shipment" || !strings.Contains(string(c.Message.ToolCalls[0].Arguments), "1ZABC") {
 		t.Fatalf("second call = %+v", c.Message.ToolCalls)

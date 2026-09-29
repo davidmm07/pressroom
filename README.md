@@ -74,7 +74,7 @@ make dev-web        # dashboard on :5173
 Send an event the way the storefront would:
 
 ```bash
-go run ./cmd/pressroomctl dispatch ticket.created '{"ticketId":"T-9001","orderId":"SM-1046","message":"Where are my buttons?"}'
+go run ./cmd/pressroomctl dispatch ticket.created '{"ticketId":"T-9001","orderId":"ORD-1046","message":"Where are my buttons?"}'
 ```
 
 ## See it work: business scenarios
