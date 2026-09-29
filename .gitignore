@@ -27,3 +27,7 @@ web/coverage/
 
 # Postman CLI
 postman-cli-reports/
+
+# Postman desktop app (Native Git): workspace binding and globals are local
+.postman/
+postman/globals/
