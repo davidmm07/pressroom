@@ -143,13 +143,16 @@ func lookupFact(facts map[string]any, name string) (any, bool) {
 	return nil, false
 }
 
-var proseFields = map[string]bool{"body": true, "message": true, "note": true, "summary": true, "reason": true, "text": true, "subject": true}
+var proseFields = map[string]bool{"body": true, "message": true, "note": true, "summary": true, "reason": true, "text": true, "subject": true, "headline": true}
 
 func compose(field string, facts map[string]any) string {
 	var parts []string
-	for _, k := range []string{"orderId", "status", "product", "carrier", "trackingNumber", "estimatedDelivery", "issue", "proofUrl"} {
+	for _, k := range []string{
+		"customerName", "orderId", "status", "product", "carrier", "trackingNumber", "estimatedDelivery", "issue", "proofUrl",
+		"remedy", "verdict", "recommendation", "category", "reviewCount", "launchScore", "disqualifiedEntries",
+	} {
 		if v, ok := facts[k]; ok {
-			parts = append(parts, fmt.Sprintf("%s %v", k, v))
+			parts = append(parts, k+" "+strings.TrimSuffix(fmt.Sprint(v), "."))
 		}
 	}
 	if len(parts) == 0 {
