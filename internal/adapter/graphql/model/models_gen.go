@@ -456,23 +456,27 @@ type Department string
 
 const (
 	DepartmentPrepress           Department = "PREPRESS"
+	DepartmentManufacturing      Department = "MANUFACTURING"
 	DepartmentCustomerExperience Department = "CUSTOMER_EXPERIENCE"
 	DepartmentOperations         Department = "OPERATIONS"
+	DepartmentMarketplace        Department = "MARKETPLACE"
 	DepartmentMarketing          Department = "MARKETING"
 	DepartmentFinance            Department = "FINANCE"
 )
 
 var AllDepartment = []Department{
 	DepartmentPrepress,
+	DepartmentManufacturing,
 	DepartmentCustomerExperience,
 	DepartmentOperations,
+	DepartmentMarketplace,
 	DepartmentMarketing,
 	DepartmentFinance,
 }
 
 func (e Department) IsValid() bool {
 	switch e {
-	case DepartmentPrepress, DepartmentCustomerExperience, DepartmentOperations, DepartmentMarketing, DepartmentFinance:
+	case DepartmentPrepress, DepartmentManufacturing, DepartmentCustomerExperience, DepartmentOperations, DepartmentMarketplace, DepartmentMarketing, DepartmentFinance:
 		return true
 	}
 	return false

@@ -5,16 +5,18 @@ type Department string
 
 const (
 	DepartmentPrepress           Department = "PREPRESS"
+	DepartmentManufacturing      Department = "MANUFACTURING"
 	DepartmentCustomerExperience Department = "CUSTOMER_EXPERIENCE"
 	DepartmentOperations         Department = "OPERATIONS"
+	DepartmentMarketplace        Department = "MARKETPLACE"
 	DepartmentMarketing          Department = "MARKETING"
 	DepartmentFinance            Department = "FINANCE"
 )
 
 // Departments lists every department in display order.
 var Departments = []Department{
-	DepartmentPrepress, DepartmentCustomerExperience, DepartmentOperations,
-	DepartmentMarketing, DepartmentFinance,
+	DepartmentPrepress, DepartmentManufacturing, DepartmentCustomerExperience, DepartmentOperations,
+	DepartmentMarketplace, DepartmentMarketing, DepartmentFinance,
 }
 
 func (d Department) Valid() bool {

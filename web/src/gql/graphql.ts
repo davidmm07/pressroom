@@ -123,7 +123,9 @@ export type Decision =
 export type Department =
   | 'CUSTOMER_EXPERIENCE'
   | 'FINANCE'
+  | 'MANUFACTURING'
   | 'MARKETING'
+  | 'MARKETPLACE'
   | 'OPERATIONS'
   | 'PREPRESS';
 

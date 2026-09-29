@@ -4,7 +4,15 @@ import { z } from 'zod';
 // instant feedback. The server stays the source of truth: whatever it
 // returns in userErrors is shown on the same fields.
 
-export const departments = ['PREPRESS', 'CUSTOMER_EXPERIENCE', 'OPERATIONS', 'MARKETING', 'FINANCE'] as const;
+export const departments = [
+  'PREPRESS',
+  'MANUFACTURING',
+  'CUSTOMER_EXPERIENCE',
+  'OPERATIONS',
+  'MARKETPLACE',
+  'MARKETING',
+  'FINANCE',
+] as const;
 export const levels = ['LOW', 'MEDIUM', 'HIGH'] as const;
 
 /** Parses a textarea into a JSON object, the shape every run input takes. */
