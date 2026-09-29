@@ -1,5 +1,4 @@
 $kind: collection
-name: Pressroom Scenarios
 description: |-
   Seven business scenarios that show what Pressroom is for, each one a folder
   you can run on its own. Every scenario answers a question a company asks
@@ -23,9 +22,47 @@ description: |-
   `make scenarios S="02 Refunds wait for a human"`, or open the collection in
   the Postman desktop app and use the Collection Runner. Diagrams of every
   scenario are in docs/scenarios.md.
+variables:
+  s1MessageId: ""
+  s1EventData: ""
+  s1RunIds: ""
+  s1RunId: ""
+  polls: ""
+  s1Seconds: ""
+  s1Cost: ""
+  s2MessageId: ""
+  s2EventData: ""
+  s2RunIds: ""
+  s2RunId: ""
+  s3MessageId: ""
+  s3EventData: ""
+  s3RunIds: ""
+  s3RunId: ""
+  s4Slug: ""
+  s4AgentId: ""
+  s4ExperimentId: ""
+  s4Sent: ""
+  s4Champion: ""
+  s4Challenger: ""
+  s4TicketId: ""
+  s4ChampionCost: ""
+  s4ChallengerCost: ""
+  s5Slug: ""
+  s5AgentId: ""
+  s5RunIds: ""
+  s5Key: ""
+  s5Reviewed: ""
+  s5ReviewRunId: ""
+  s5Verdict: ""
+  s6OpportunityId: ""
+  s6Slug: ""
+  s6AgentId: ""
+  s6RunId: ""
+  s7AgentId: ""
+  s7StaleVersion: ""
+  s7RunId: ""
 scripts:
   - type: http:beforeRequest
-    language: text/javascript
     code: |-
       // Every request speaks JSON and names the operator, unless it sets its own.
       if (!pm.request.headers.has('Content-Type')) {
@@ -34,8 +71,8 @@ scripts:
       if (!pm.request.headers.has('X-Pressroom-Actor')) {
           pm.request.headers.add({ key: 'X-Pressroom-Actor', value: pm.environment.get('actor') });
       }
-  - type: http:afterResponse
     language: text/javascript
+  - type: http:afterResponse
     code: |-
       pm.test('[contract] No server error', function () {
           pm.expect(pm.response.code).to.be.below(500);
@@ -43,3 +80,4 @@ scripts:
       // The Postman CLI silently skips request files it cannot parse.
       // scripts/scenarios.sh checks every step number shows up here.
       console.log('step', pm.info.requestName.split(' ')[0]);
+    language: text/javascript
